@@ -38,6 +38,18 @@ public class NLService extends NotificationListenerService {
 
     @Override
     public IBinder onBind(Intent mIntent) {
+        /** Ref:
+         * https://stackoverflow.com/questions/34625022/android-service-not-yet-bound-but-onbind-is-called/34640217#34640217
+         * If your service is correctly declared in the manifest, and Notification Access is enabled in Security /
+         * Sound & Notification, the system will bind to the service using action
+         * NotificationListenerService.SERVICE_INTERFACE. For this bind request, the service must return the
+         * binder for NotificationListenerService, which is super.onBind(intent).
+         *
+         * Earlier: onBind() was getting called and returning mBinder, but
+         * getActiveNotifications() used to fail with the message -
+         *   01-30 19:17:16.387  2818  2818 W NLService: Notification listener service not yet bound.
+         * and returned NULL, not to mention onNotificationsPosted() wasn't even printing anything
+         */
         Log.i(TAG, "onBind");
         String action = mIntent.getAction();
         Log.d(TAG, "onBind: " + action);
