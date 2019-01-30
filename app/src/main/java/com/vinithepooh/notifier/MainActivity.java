@@ -1,10 +1,13 @@
 package com.vinithepooh.notifier;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -28,9 +31,60 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private TextView txtView;
-    private NotificationReceiver nReceiver;
     private final String TAG = "bulletin_board";
     private HashMap<String, MenuItem> app_menus;
+    private NLService mBoundService;
+    private boolean mIsBound;
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // This is called when the connection with the service has
+            // been established, giving us the service object we can use
+            // to interact with the service.  Because we have bound to a
+            // explicit service that we know is running in our own
+            // process, we can cast its IBinder to a concrete class and
+            // directly access it.
+            mBoundService = ((NLService.NLBinder)service).getService();
+
+            Log.i(TAG,"Service connected");
+
+
+            // Tell the user about this for our demo.
+            Toast.makeText(getApplicationContext(),
+                    "Service connected",
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            // This is called when the connection with the service has
+            // been unexpectedly disconnected -- that is, its process
+            // crashed. Because it is running in our same process, we
+            // should never see this happen.
+            mBoundService = null;
+
+            Log.i(TAG,"Service disconnected");
+
+            Toast.makeText(getApplicationContext(),
+                    "Service disconnected",
+                    Toast.LENGTH_SHORT).show();
+        }
+    };
+
+
+    void doBindService() {
+        bindService(new Intent(this, NLService.class),
+                mConnection,
+                Context.BIND_AUTO_CREATE);
+        mIsBound = true;
+    }
+
+    void doUnbindService() {
+        if (mIsBound) {
+            // Detach our existing connection.
+            unbindService(mConnection);
+            mIsBound = false;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,15 +143,17 @@ public class MainActivity extends AppCompatActivity
             Toast.makeText(getApplicationContext(), "Does not have notification access, Enable from settings",
                     Toast.LENGTH_LONG).show();
         }
+
+        // start the notification listener service
+        Intent mServiceIntent = new Intent(this, NLService.class);
+        startService(mServiceIntent);
+        doBindService();
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        nReceiver = new NotificationReceiver();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction("com.vinithepooh.notifier.NOTIFICATION_LISTENER");
-        registerReceiver(nReceiver,filter);
+
 
         Log.i(TAG,"**********  Service registered onstart");
 
@@ -107,6 +163,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStop() {
         //disconnect sqlite3 db etc
+        Log.i(TAG,"**********  Activity onstop");
+
     }
 
 
@@ -169,10 +227,19 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.nav_ntfcns) {
             // Handle the active notifications action
             Log.d(TAG, "Listing notifications");
+            try {
 
+                Log.i(TAG, "getNofifcations() returned:\n" + mBoundService.get_notifications());
+            } catch (Exception e) {
+                Log.e(TAG, "Exception occurred while getting notifications from activity: " + e.getMessage());
+
+            }
+
+            /**
             Intent i = new Intent("com.vinithepooh.notifier.NOTIFICATION_LISTENER_SERVICE");
             i.putExtra("command","list");
             sendBroadcast(i);
+            */
 
             NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
 
@@ -200,16 +267,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(nReceiver);
+        doUnbindService();
     }
-
-
-    class NotificationReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String temp = intent.getStringExtra("notification_event") + "\n" + txtView.getText();
-            txtView.setText(temp);
-        }
-    }
-
 }
