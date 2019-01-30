@@ -83,6 +83,7 @@ public class NLService extends NotificationListenerService {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        stopSelf();
 
         Log.i(TAG,"**********  Service destroyed");
 

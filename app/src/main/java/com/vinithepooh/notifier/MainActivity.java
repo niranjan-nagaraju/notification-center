@@ -199,6 +199,22 @@ public class MainActivity extends AppCompatActivity
             Intent intent=new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
             startActivity(intent);
             return true;
+        } else if (id == R.id.exitapp) {
+            // Stop background notification listener and exit.
+
+            Log.d(TAG, "Exiting application");
+
+            Toast.makeText(getApplicationContext(), "Exiting application",
+                    Toast.LENGTH_LONG).show();
+
+
+            // stop service
+            Intent mServiceIntent = new Intent(this, NLService.class);
+            stopService(mServiceIntent);
+            doUnbindService();
+
+            // Exit activity
+            finish();
         }
 
         return super.onOptionsItemSelected(item);
