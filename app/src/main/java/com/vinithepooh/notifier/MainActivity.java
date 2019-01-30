@@ -164,6 +164,7 @@ public class MainActivity extends AppCompatActivity
     public void onStop() {
         //disconnect sqlite3 db etc
         Log.i(TAG,"**********  Activity onstop");
+        super.onStop();
 
     }
 
@@ -266,6 +267,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onDestroy() {
+        Log.i(TAG, "onDestroy()");
         super.onDestroy();
         doUnbindService();
     }
