@@ -148,6 +148,8 @@ public class MainActivity extends AppCompatActivity
         Intent mServiceIntent = new Intent(this, NLService.class);
         startService(mServiceIntent);
         doBindService();
+
+        //TODO: runThread();
     }
 
     @Override
@@ -245,18 +247,15 @@ public class MainActivity extends AppCompatActivity
             // Handle the active notifications action
             Log.d(TAG, "Listing notifications");
             try {
-
-                Log.i(TAG, "getNofifcations() returned:\n" + mBoundService.get_notifications());
+                String notifications_str = mBoundService.get_notifications();
+                Log.i(TAG, "getNofifcations() returned:\n" + notifications_str);
+                txtView.setText(notifications_str);
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while getting notifications from activity: " + e.getMessage());
 
             }
 
             /**
-            Intent i = new Intent("com.vinithepooh.notifier.NOTIFICATION_LISTENER_SERVICE");
-            i.putExtra("command","list");
-            sendBroadcast(i);
-            */
 
             NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
 
@@ -286,5 +285,30 @@ public class MainActivity extends AppCompatActivity
         Log.i(TAG, "onDestroy()");
         super.onDestroy();
         doUnbindService();
+    }
+
+    private void runThread() {
+        new Thread() {
+            public void run() {
+                while (true) {
+                    try {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.i(TAG, "Inside thread - updating notifications");
+                                if (!mIsBound || mBoundService == null) {
+                                    Log.i(TAG, "Not bound!");
+                                } else {
+                                    txtView.setText("Inside thread!");
+                                }
+                            }
+                        });
+                        Thread.sleep(500);
+                    } catch (Exception e) {
+                        Log.i(TAG, "Exception in thread:" + e.getMessage());
+                    }
+                }
+            }
+        }.start();
     }
 }
