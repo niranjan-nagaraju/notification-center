@@ -12,6 +12,9 @@ import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatDelegate;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -26,6 +29,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.HashMap;
+import java.util.ArrayList;
+
+import static com.vinithepooh.notifier.MyData.pkg_names;
+
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -35,6 +42,15 @@ public class MainActivity extends AppCompatActivity
     private HashMap<String, MenuItem> app_menus;
     private NLService mBoundService;
     private boolean mIsBound;
+
+
+    private static RecyclerView.Adapter adapter;
+    private RecyclerView.LayoutManager layoutManager;
+    private static RecyclerView recyclerView;
+    private static ArrayList<NtfcnsDataModel> data;
+    static View.OnClickListener myOnClickListener;
+    private static ArrayList<Integer> removedItems;
+
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -103,7 +119,7 @@ public class MainActivity extends AppCompatActivity
         });
 
 
-        txtView = findViewById(R.id.textView);
+        txtView = findViewById(R.id.textViewAppName);
 
         /**
         txtView.setText("Notify center\n" +
@@ -150,7 +166,71 @@ public class MainActivity extends AppCompatActivity
         doBindService();
 
         //TODO: runThread();
+
+        //myOnClickListener = new MyOnClickListener(this);
+
+        recyclerView = (RecyclerView) findViewById(R.id.ntfcns_recycler_view);
+        recyclerView.setHasFixedSize(true);
+
+        layoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+
+        data = new ArrayList<NtfcnsDataModel>();
+
+
+
+
+
+        for (int i = 0; i < MyData.pkg_names.length; i++) {
+            data.add(new NtfcnsDataModel(
+                    MyData.pkg_names[i],
+                    MyData.app_names[i],
+                    MyData.ntfcns_strings[i],
+                    MyData.placeholder_strings[i]
+            ));
+        }
+
+        removedItems = new ArrayList<Integer>();
+
+        adapter = new Ntfcns_adapter(data);
+        recyclerView.setAdapter(adapter);
     }
+
+/**
+    private static class MyOnClickListener implements View.OnClickListener {
+
+        private final Context context;
+
+        private MyOnClickListener(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public void onClick(View v) {
+            removeItem(v);
+        }
+
+        private void removeItem(View v) {
+            int selectedItemPosition = recyclerView.getChildAdapterPosition(v);
+            RecyclerView.ViewHolder viewHolder
+                    = recyclerView.findViewHolderForLayoutPosition(selectedItemPosition);
+            TextView textViewApps
+                    = (TextView) viewHolder.itemView.findViewById(R.id.textViewAppName);
+            String selectedName = (String) textViewApps.getText();
+            int selectedItemId = -1;
+            for (int i = 0; i < MyData.pkg_names.length; i++) {
+                if (selectedName.equals(MyData.pkg_names[i])) {
+                    selectedItemId = MyData.id_[i];
+                }
+            }
+            removedItems.add(selectedItemId);
+            data.remove(selectedItemPosition);
+            adapter.notifyItemRemoved(selectedItemPosition);
+        }
+    }
+ */
+
 
     @Override
     public void onStart() {
@@ -249,7 +329,7 @@ public class MainActivity extends AppCompatActivity
             try {
                 String notifications_str = mBoundService.get_notifications();
                 Log.i(TAG, "getNofifcations() returned:\n" + notifications_str);
-                txtView.setText(notifications_str);
+                //txtView.setText(notifications_str);
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while getting notifications from activity: " + e.getMessage());
 
@@ -299,7 +379,7 @@ public class MainActivity extends AppCompatActivity
                                 if (!mIsBound || mBoundService == null) {
                                     Log.i(TAG, "Not bound!");
                                 } else {
-                                    txtView.setText("Inside thread!");
+                                    //txtView.setText("Inside thread!");
                                 }
                             }
                         });
