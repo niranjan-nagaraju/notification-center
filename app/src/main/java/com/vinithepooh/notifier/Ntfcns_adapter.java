@@ -1,6 +1,8 @@
 package com.vinithepooh.notifier;
 
 import android.graphics.Color;
+import android.support.design.widget.Snackbar;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +26,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewNtfcns;
         TextView textViewPlaceholder;
         View separator;
+        CardView card_view;
 
         public NViewHolder(View itemView) {
             super(itemView);
@@ -32,6 +35,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             this.textViewNtfcns = (TextView) itemView.findViewById(R.id.textViewntfcn);
             this.textViewPlaceholder = (TextView) itemView.findViewById(R.id.textViewPlaceholder);
             this.separator = (View) itemView.findViewById(R.id.viewseparator);
+            this.card_view=(CardView) itemView.findViewById(R.id.card_view);
         }
     }
 
@@ -45,19 +49,33 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.ntfcns_card_layout, parent, false);
 
-        //view.setOnClickListener(MainActivity.myOnClickListener);
 
         NViewHolder myViewHolder = new NViewHolder(view);
         return myViewHolder;
     }
 
     @Override
-    public void onBindViewHolder(NViewHolder holder, int listPosition) {
+    public void onBindViewHolder(NViewHolder holder, final int listPosition) {
         TextView textViewApps = holder.textViewApps;
         TextView textViewPkgs = holder.textViewPkgs;
         TextView textViewNtfcns = holder.textViewNtfcns;
         TextView textViewPlaceholder = holder.textViewPlaceholder;
         View separator = holder.separator;
+
+        holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
+        /**
+         * NOTE: onclick listener has been set from main activity
+         * This is now redundant
+         *
+        holder.card_view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Snackbar.make(v, "Clicked card with content: " + dataSet.get(listPosition).getApp_name(),
+                        Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+         */
 
         textViewApps.setText(dataSet.get(listPosition).getApp_name());
         textViewPkgs.setText(dataSet.get(listPosition).getPkg_name());

@@ -4,7 +4,7 @@ package com.vinithepooh.notifier;
  * Created by vinithepooh on 15/02/19.
  */
 
-public class MyData {
+public class SampleNotifications {
 
     static String[] app_names = {
             "Cupcake",

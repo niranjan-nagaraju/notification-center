@@ -1,17 +1,15 @@
 package com.vinithepooh.notifier;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatDelegate;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -31,13 +29,11 @@ import android.widget.Toast;
 import java.util.HashMap;
 import java.util.ArrayList;
 
-import static com.vinithepooh.notifier.MyData.pkg_names;
 
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    private TextView txtView;
     private final String TAG = "bulletin_board";
     private HashMap<String, MenuItem> app_menus;
     private NLService mBoundService;
@@ -48,7 +44,7 @@ public class MainActivity extends AppCompatActivity
     private RecyclerView.LayoutManager layoutManager;
     private static RecyclerView recyclerView;
     private static ArrayList<NtfcnsDataModel> data;
-    static View.OnClickListener myOnClickListener;
+    static View.OnClickListener cardsOnClickListener;
     private static ArrayList<Integer> removedItems;
 
 
@@ -119,19 +115,6 @@ public class MainActivity extends AppCompatActivity
         });
 
 
-        txtView = findViewById(R.id.textViewAppName);
-
-        /**
-        txtView.setText("Notify center\n" +
-                "a\nb\nc\nd\ne\nf\ng\nh\ni\n"+
-                "j\nk\nl\nm\nn\no\np\nq\nr\n"+
-                "s\nt\nu\nv\nw\nx\ny\nz\n" +
-                "a\nb\nc\nd\ne\nf\ng\nh\ni\n"+
-                "j\nk\nl\nm\nn\no\np\nq\nr\n"+
-                "s\nt\nu\nv\nw\nx\ny\nz\n"
-        );*/
-
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -140,7 +123,6 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
 
         if (Settings.Secure.getString(
                 this.getContentResolver(),
@@ -165,9 +147,11 @@ public class MainActivity extends AppCompatActivity
         startService(mServiceIntent);
         doBindService();
 
-        //TODO: runThread();
+        //TODO:
+        // START runThread(); to be an UI update thread
+        // checks active notifications, and updates current view.
 
-        //myOnClickListener = new MyOnClickListener(this);
+        cardsOnClickListener = new CardsOnClickListener(this);
 
         recyclerView = (RecyclerView) findViewById(R.id.ntfcns_recycler_view);
         recyclerView.setHasFixedSize(true);
@@ -178,16 +162,12 @@ public class MainActivity extends AppCompatActivity
 
         data = new ArrayList<NtfcnsDataModel>();
 
-
-
-
-
-        for (int i = 0; i < MyData.pkg_names.length; i++) {
+        for (int i = 0; i < SampleNotifications.pkg_names.length; i++) {
             data.add(new NtfcnsDataModel(
-                    MyData.pkg_names[i],
-                    MyData.app_names[i],
-                    MyData.ntfcns_strings[i],
-                    MyData.placeholder_strings[i]
+                    SampleNotifications.pkg_names[i],
+                    SampleNotifications.app_names[i],
+                    SampleNotifications.ntfcns_strings[i],
+                    SampleNotifications.placeholder_strings[i]
             ));
         }
 
@@ -197,20 +177,32 @@ public class MainActivity extends AppCompatActivity
         recyclerView.setAdapter(adapter);
     }
 
-/**
-    private static class MyOnClickListener implements View.OnClickListener {
+
+    private static class CardsOnClickListener implements View.OnClickListener {
 
         private final Context context;
+        private final String TAG = "bulletin_board";
 
-        private MyOnClickListener(Context context) {
+
+        private CardsOnClickListener(Context context) {
             this.context = context;
         }
 
         @Override
         public void onClick(View v) {
-            removeItem(v);
+            Log.i(TAG, "Card clicked!");
+            handleCardClick(v);
         }
 
+        private void handleCardClick(View v) {
+            TextView textViewApps = v.findViewById(R.id.textViewAppName);
+
+            Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),
+                    Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
+
+        /**
         private void removeItem(View v) {
             int selectedItemPosition = recyclerView.getChildAdapterPosition(v);
             RecyclerView.ViewHolder viewHolder
@@ -219,17 +211,18 @@ public class MainActivity extends AppCompatActivity
                     = (TextView) viewHolder.itemView.findViewById(R.id.textViewAppName);
             String selectedName = (String) textViewApps.getText();
             int selectedItemId = -1;
-            for (int i = 0; i < MyData.pkg_names.length; i++) {
-                if (selectedName.equals(MyData.pkg_names[i])) {
-                    selectedItemId = MyData.id_[i];
+            for (int i = 0; i < SampleNotifications.pkg_names.length; i++) {
+                if (selectedName.equals(SampleNotifications.pkg_names[i])) {
+                    selectedItemId = SampleNotifications.id_[i];
                 }
             }
             removedItems.add(selectedItemId);
             data.remove(selectedItemPosition);
             adapter.notifyItemRemoved(selectedItemPosition);
         }
+         */
     }
- */
+
 
 
     @Override
