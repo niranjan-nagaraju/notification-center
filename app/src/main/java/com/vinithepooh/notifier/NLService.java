@@ -12,13 +12,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.service.notification.StatusBarNotification;
+import android.support.v4.app.NotificationCompat;
+import android.text.format.DateUtils;
 import android.util.Log;
 
 import com.google.gson.Gson;
 
+import java.util.Date;
+
+import static android.app.Notification.EXTRA_BIG_TEXT;
+import static android.app.Notification.EXTRA_CONVERSATION_TITLE;
+import static android.app.Notification.EXTRA_INFO_TEXT;
+import static android.app.Notification.EXTRA_MESSAGES;
+import static android.app.Notification.EXTRA_SUB_TEXT;
+import static android.app.Notification.EXTRA_SUMMARY_TEXT;
 import static android.app.Notification.EXTRA_TEXT;
 import static android.app.Notification.EXTRA_TEXT_LINES;
 import static android.app.Notification.EXTRA_TITLE;
+import static android.app.Notification.EXTRA_TITLE_BIG;
 
 
 public class NLService extends NotificationListenerService {
@@ -153,15 +164,31 @@ public class NLService extends NotificationListenerService {
                 Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText +
                         "\t" + sbn.getPackageName());
 
+                Log.i(TAG,"App name :" + app_name +  "\n");
+
+
+                /*
 
                 String title = sbn.getNotification().extras.getString(EXTRA_TITLE);
                 String text = sbn.getNotification().extras.getString(EXTRA_TEXT);
 
-                Log.i(TAG,"App name :" + app_name +  "\n");
+
 
                 Log.i(TAG,"Title :" + title +  "\n");
                 Log.i(TAG,"Text :" + text + "\n");
+                Log.i(TAG, "Extra conv titles: " + sbn.getNotification().extras.getString(EXTRA_CONVERSATION_TITLE));
+
+                Log.i(TAG, "Extra info text: " + sbn.getNotification().extras.getString(EXTRA_INFO_TEXT));
+                Log.i(TAG, "Extra Messages: " + sbn.getNotification().extras.getString(EXTRA_MESSAGES));
+
+                Log.i(TAG, "Extra big text lines" + sbn.getNotification().extras.getString(EXTRA_BIG_TEXT));
                 Log.i(TAG, "Extra text lines" + sbn.getNotification().extras.getString(EXTRA_TEXT_LINES));
+                Log.i(TAG, "Extra sub text " + sbn.getNotification().extras.getString(EXTRA_SUB_TEXT));
+                Log.i(TAG, "Extra summary text " + sbn.getNotification().extras.getString(EXTRA_SUMMARY_TEXT));
+                Log.i(TAG, "Ticker text " + sbn.getNotification().tickerText);
+                Log.i(TAG, "SBN group? " + sbn.isGroup());
+
+                Log.i(TAG, "Extra title big: " + sbn.getNotification().extras.getString(EXTRA_TITLE_BIG));
                 Log.i(TAG, "Clearable? " + sbn.isClearable());
 
                 Log.i(TAG,"Click Action :" + sbn.getNotification().contentIntent.toString());
@@ -171,7 +198,7 @@ public class NLService extends NotificationListenerService {
                     Log.i(TAG,"Action :" + action.title + " Intent: " + action.actionIntent.toString() +  "\n");
                 }
 
-                /**
+                /** How to execute a pending intent
                  if (app_name.equals("Tasker")) {
                  Log.i(TAG,"Found tasker");
                  // execute action
@@ -181,6 +208,40 @@ public class NLService extends NotificationListenerService {
                  actions[0].actionIntent.send(context, 0, intent);
                  }
                  } */
+
+                Log.i(TAG, "COMPATS");
+
+
+
+                Log.i(TAG,"Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) +  "\n");
+                Log.i(TAG,"Text :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) + "\n");
+                Log.i(TAG, "Extra conv titles: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_CONVERSATION_TITLE));
+
+                Log.i(TAG, "Extra info text: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_INFO_TEXT));
+                Log.i(TAG, "Extra Messages: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_MESSAGES));
+
+                Log.i(TAG, "Extra big text lines" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT));
+                Log.i(TAG, "Extra text lines" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT_LINES));
+                Log.i(TAG, "Extra sub text " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUB_TEXT));
+                Log.i(TAG, "Extra summary text " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUMMARY_TEXT));
+
+                Log.i(TAG, "Extra title big: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE_BIG));
+
+
+                Log.i(TAG, "SBN group? " + sbn.isGroup());
+                Log.i(TAG, "Clearable? " + sbn.isClearable());
+                Log.i(TAG, "Posted at " + DateUtils.getRelativeTimeSpanString(sbn.getPostTime()));
+                Log.i(TAG, "Group key " + sbn.getGroupKey());
+                Log.i(TAG, "SBN key " + sbn.getKey());
+                Log.i(TAG, "TAG " + sbn.getTag());
+                Log.i(TAG,"Click Action :" + sbn.getNotification().contentIntent.toString());
+                Log.i(TAG,"Delete Action :" + sbn.getNotification().deleteIntent.toString());
+
+
+                for (Notification.Action action: sbn.getNotification().actions) {
+                    Log.i(TAG,"Action :" + action.title + " Intent: " + action.actionIntent.toString() +  "\n");
+                }
+
 
             } catch(Exception e) {
                 Log.e(TAG, "Exception occurred while printing notifications: " + e.getMessage());

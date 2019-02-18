@@ -1,12 +1,14 @@
 package com.vinithepooh.notifier;
 
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.w3c.dom.Text;
@@ -26,6 +28,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewNtfcns;
         TextView textViewPlaceholder;
         View separator;
+        ImageView icon;
+
         CardView card_view;
 
         public NViewHolder(View itemView) {
@@ -35,7 +39,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             this.textViewNtfcns = (TextView) itemView.findViewById(R.id.textViewntfcn);
             this.textViewPlaceholder = (TextView) itemView.findViewById(R.id.textViewPlaceholder);
             this.separator = (View) itemView.findViewById(R.id.viewseparator);
-            this.card_view=(CardView) itemView.findViewById(R.id.card_view);
+            this.icon = (ImageView)  itemView.findViewById(R.id.imageViewntfcn_icon);
+            this.card_view = (CardView) itemView.findViewById(R.id.card_view);
         }
     }
 
@@ -61,6 +66,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewNtfcns = holder.textViewNtfcns;
         TextView textViewPlaceholder = holder.textViewPlaceholder;
         View separator = holder.separator;
+        ImageView icon = holder.icon;
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
         /**
@@ -83,6 +89,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         textViewPlaceholder.setText(dataSet.get(listPosition).getPlaceholder());
         //separator.setBackgroundColor(Color.RED);
 
+        if (dataSet.get(listPosition).getIcon() != null)
+            icon.setImageDrawable(dataSet.get(listPosition).getIcon());
 
         // show separator and date only for card #0
         if (listPosition == 0) {

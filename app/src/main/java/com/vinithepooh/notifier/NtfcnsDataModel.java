@@ -1,5 +1,7 @@
 package com.vinithepooh.notifier;
 
+import android.graphics.drawable.Drawable;
+
 /**
  * Created by vinithepooh on 14/02/19.
  */
@@ -9,14 +11,15 @@ public class NtfcnsDataModel {
     String app_name;
     String ntfcn_contents;
     String placeholder;
-
+    Drawable icon;
 
     public NtfcnsDataModel(String pkg_name, String app_name, String ntfcn_contents,
-                           String placeholder) {
+                           String placeholder, Drawable icon) {
         this.pkg_name = pkg_name;
         this.app_name = app_name;
         this.ntfcn_contents = ntfcn_contents;
         this.placeholder = placeholder;
+        this.icon = icon;
     }
 
 
@@ -34,5 +37,9 @@ public class NtfcnsDataModel {
 
     public String getPlaceholder() {
         return placeholder;
+    }
+
+    public Drawable getIcon() {
+        return icon;
     }
 }

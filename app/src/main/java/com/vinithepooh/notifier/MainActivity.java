@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -161,13 +162,20 @@ public class MainActivity extends AppCompatActivity
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
         data = new ArrayList<NtfcnsDataModel>();
-
+        Drawable twitter_icon;
+        try {
+            twitter_icon = getPackageManager().getApplicationIcon("com.twitter.android");
+        } catch (Exception e) {
+            twitter_icon = null;
+            Log.i(TAG,"Couldnt find twitter icon");
+        }
         for (int i = 0; i < SampleNotifications.pkg_names.length; i++) {
             data.add(new NtfcnsDataModel(
                     SampleNotifications.pkg_names[i],
                     SampleNotifications.app_names[i],
                     SampleNotifications.ntfcns_strings[i],
-                    SampleNotifications.placeholder_strings[i]
+                    SampleNotifications.placeholder_strings[i],
+                    twitter_icon
             ));
         }
 
@@ -175,6 +183,11 @@ public class MainActivity extends AppCompatActivity
 
         adapter = new Ntfcns_adapter(data);
         recyclerView.setAdapter(adapter);
+
+
+        TextView counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
+        counterTv.setText(String.valueOf(100) + "+");
+
     }
 
 
