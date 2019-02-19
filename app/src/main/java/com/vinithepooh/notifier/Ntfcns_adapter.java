@@ -23,23 +23,36 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
     public static class NViewHolder extends RecyclerView.ViewHolder {
 
-        TextView textViewApps;
-        TextView textViewPkgs;
-        TextView textViewNtfcns;
         TextView textViewPlaceholder;
         View separator;
-        ImageView icon;
+
+        ImageView imageViewAppIcon;
+        TextView textViewApp;
+        TextView textViewSubText;
+        TextView textViewPostTime;
+
+        TextView textViewNtfcnsTitle;
+        TextView textViewNtfcns;
+        TextView textViewNtfcnsBigText;
+        ImageView imageViewLargeIcon;
 
         CardView card_view;
 
         public NViewHolder(View itemView) {
             super(itemView);
-            this.textViewApps = (TextView) itemView.findViewById(R.id.textViewAppName);
-            this.textViewPkgs = (TextView) itemView.findViewById(R.id.textViewPkgName);
-            this.textViewNtfcns = (TextView) itemView.findViewById(R.id.textViewntfcn);
             this.textViewPlaceholder = (TextView) itemView.findViewById(R.id.textViewPlaceholder);
-            this.separator = (View) itemView.findViewById(R.id.viewseparator);
-            this.icon = (ImageView)  itemView.findViewById(R.id.imageViewntfcn_icon);
+            this.separator = (View) itemView.findViewById(R.id.viewSeparator);
+
+            this.imageViewAppIcon = (ImageView)  itemView.findViewById(R.id.imageViewAppIcon);
+            this.textViewApp = (TextView) itemView.findViewById(R.id.textViewAppName);
+            this.textViewSubText = (TextView) itemView.findViewById(R.id.textViewSubText);
+            this.textViewPostTime = (TextView) itemView.findViewById(R.id.textViewPostTime);
+
+            this.textViewNtfcnsTitle = (TextView) itemView.findViewById(R.id.textViewntfcnTitle);
+            this.textViewNtfcns = (TextView) itemView.findViewById(R.id.textViewntfcn);
+            this.textViewNtfcnsBigText = (TextView) itemView.findViewById(R.id.textViewntfcnBigText);
+            this.imageViewLargeIcon = (ImageView) itemView.findViewById(R.id.imageViewntfcn_icon);
+
             this.card_view = (CardView) itemView.findViewById(R.id.card_view);
         }
     }
@@ -61,12 +74,18 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
     @Override
     public void onBindViewHolder(NViewHolder holder, final int listPosition) {
-        TextView textViewApps = holder.textViewApps;
-        TextView textViewPkgs = holder.textViewPkgs;
-        TextView textViewNtfcns = holder.textViewNtfcns;
-        TextView textViewPlaceholder = holder.textViewPlaceholder;
         View separator = holder.separator;
-        ImageView icon = holder.icon;
+        TextView textViewPlaceholder = holder.textViewPlaceholder;
+
+        ImageView imageViewAppIcon = holder.imageViewAppIcon;
+        TextView textViewApp = holder.textViewApp;
+        TextView textViewSubText = holder.textViewSubText;
+        TextView textViewPostTime = holder.textViewPostTime;
+
+        TextView textViewNtfcnsTitle = holder.textViewNtfcnsTitle;
+        TextView textViewNtfcns = holder.textViewNtfcns;
+        TextView  textViewNtfcnsBigText= holder.textViewNtfcnsBigText;
+        ImageView imageViewLargeIcon = holder.imageViewLargeIcon;
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
         /**
@@ -83,16 +102,9 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         });
          */
 
-        textViewApps.setText(dataSet.get(listPosition).getApp_name());
-        textViewPkgs.setText(dataSet.get(listPosition).getPkg_name());
-        textViewNtfcns.setText(dataSet.get(listPosition).getNtfcn_contents());
-        textViewPlaceholder.setText(dataSet.get(listPosition).getPlaceholder());
         //separator.setBackgroundColor(Color.RED);
-
-        if (dataSet.get(listPosition).getIcon() != null)
-            icon.setImageDrawable(dataSet.get(listPosition).getIcon());
-
         // show separator and date only for card #0
+        textViewPlaceholder.setText(dataSet.get(listPosition).getPlaceholder());
         if (listPosition == 0) {
             separator.setVisibility(View.VISIBLE);
             textViewPlaceholder.setVisibility(View.VISIBLE);
@@ -100,6 +112,20 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             separator.setVisibility(View.GONE);
             textViewPlaceholder.setVisibility(View.GONE);
         }
+
+        if (dataSet.get(listPosition).getAppIcon() != null)
+            imageViewAppIcon.setImageDrawable(dataSet.get(listPosition).getAppIcon());
+
+        textViewApp.setText(dataSet.get(listPosition).getApp_name());
+        textViewSubText.setText(dataSet.get(listPosition).getSubtext());
+        textViewPostTime.setText(dataSet.get(listPosition).getPostTime());
+
+        textViewNtfcnsTitle.setText(dataSet.get(listPosition).getNtfcn_title());
+        textViewNtfcns.setText(dataSet.get(listPosition).getNtfcn_contents());
+        textViewNtfcnsBigText.setText(dataSet.get(listPosition).getNtfcn_bigtext());
+
+        if (dataSet.get(listPosition).getLargeIcon() != null)
+            imageViewLargeIcon.setImageDrawable(dataSet.get(listPosition).getLargeIcon());
 
     }
 

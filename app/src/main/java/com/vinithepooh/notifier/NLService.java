@@ -3,6 +3,7 @@ package com.vinithepooh.notifier;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Icon;
 import android.os.Binder;
 import android.os.IBinder;
 import android.service.notification.NotificationListenerService;
@@ -243,6 +244,7 @@ public class NLService extends NotificationListenerService {
                 }
 
 
+
             } catch(Exception e) {
                 Log.e(TAG, "Exception occurred while printing notifications: " + e.getMessage());
             }
@@ -254,4 +256,6 @@ public class NLService extends NotificationListenerService {
 
         return ntfcns;
     }
+
+
 }

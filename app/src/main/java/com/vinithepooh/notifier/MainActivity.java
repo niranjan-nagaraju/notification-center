@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -167,15 +168,19 @@ public class MainActivity extends AppCompatActivity
             twitter_icon = getPackageManager().getApplicationIcon("com.twitter.android");
         } catch (Exception e) {
             twitter_icon = null;
-            Log.i(TAG,"Couldnt find twitter icon");
+            Log.i(TAG,"Couldnt find twitter icon" + e.getMessage());
         }
-        for (int i = 0; i < SampleNotifications.pkg_names.length; i++) {
+        for (int i = 0; i < SampleNotifications.app_names.length; i++) {
             data.add(new NtfcnsDataModel(
-                    SampleNotifications.pkg_names[i],
+                    SampleNotifications.placeholders[i],
+                    twitter_icon,
                     SampleNotifications.app_names[i],
+                    SampleNotifications.subtexts[i],
+                    SampleNotifications.post_times[i],
+                    SampleNotifications.ntfcns_titles[i],
                     SampleNotifications.ntfcns_strings[i],
-                    SampleNotifications.placeholder_strings[i],
-                    twitter_icon
+                    SampleNotifications.ntfcns_bigtexts[i],
+                    null
             ));
         }
 
@@ -184,10 +189,8 @@ public class MainActivity extends AppCompatActivity
         adapter = new Ntfcns_adapter(data);
         recyclerView.setAdapter(adapter);
 
-
         TextView counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
-        counterTv.setText(String.valueOf(100) + "+");
-
+        counterTv.setText(String.valueOf(99) + "+");
     }
 
 
@@ -209,6 +212,17 @@ public class MainActivity extends AppCompatActivity
 
         private void handleCardClick(View v) {
             TextView textViewApps = v.findViewById(R.id.textViewAppName);
+            TextView textViewNtfcnsBigText = v.findViewById(R.id.textViewntfcnBigText);
+            TextView textViewNtfcns = v.findViewById(R.id.textViewntfcn);
+
+            /** Toggle big text and un-expanded text on card click */
+            if(textViewNtfcns.getVisibility() == View.GONE) {
+                textViewNtfcnsBigText.setVisibility(View.GONE);
+                textViewNtfcns.setVisibility(View.VISIBLE);
+            } else {
+                textViewNtfcnsBigText.setVisibility(View.VISIBLE);
+                textViewNtfcns.setVisibility(View.GONE);
+            }
 
             Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),
                     Snackbar.LENGTH_LONG)
