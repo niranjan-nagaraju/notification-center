@@ -35,6 +35,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewNtfcns;
         TextView textViewNtfcnsBigText;
         ImageView imageViewLargeIcon;
+        ImageView imageViewBigPicture;
 
         CardView card_view;
 
@@ -52,6 +53,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             this.textViewNtfcns = (TextView) itemView.findViewById(R.id.textViewntfcn);
             this.textViewNtfcnsBigText = (TextView) itemView.findViewById(R.id.textViewntfcnBigText);
             this.imageViewLargeIcon = (ImageView) itemView.findViewById(R.id.imageViewntfcn_icon);
+            this.imageViewBigPicture = (ImageView) itemView.findViewById(R.id.imageViewBigPicture);
 
             this.card_view = (CardView) itemView.findViewById(R.id.card_view);
         }
@@ -86,6 +88,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewNtfcns = holder.textViewNtfcns;
         TextView  textViewNtfcnsBigText= holder.textViewNtfcnsBigText;
         ImageView imageViewLargeIcon = holder.imageViewLargeIcon;
+        ImageView imageViewBigPicture = holder.imageViewBigPicture;
+
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
         /**
@@ -124,9 +128,13 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         textViewNtfcns.setText(dataSet.get(listPosition).getNtfcn_contents());
         textViewNtfcnsBigText.setText(dataSet.get(listPosition).getNtfcn_bigtext());
 
-        if (dataSet.get(listPosition).getLargeIcon() != null)
+        if (dataSet.get(listPosition).getLargeIcon() != null) {
             imageViewLargeIcon.setImageDrawable(dataSet.get(listPosition).getLargeIcon());
-
+            imageViewLargeIcon.setVisibility(View.VISIBLE);
+        }
+        if (dataSet.get(listPosition).getNtfcn_bigpicture() != null) {
+            imageViewBigPicture.setImageDrawable(dataSet.get(listPosition).getNtfcn_bigpicture());
+        }
     }
 
     @Override

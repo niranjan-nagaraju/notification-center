@@ -7,35 +7,27 @@ import android.graphics.drawable.Icon;
 import android.os.Binder;
 import android.os.IBinder;
 import android.service.notification.NotificationListenerService;
-import android.content.BroadcastReceiver;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
+import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
 import android.util.Log;
 
-import com.google.gson.Gson;
-
-import java.util.Date;
-
-import static android.app.Notification.EXTRA_BIG_TEXT;
-import static android.app.Notification.EXTRA_CONVERSATION_TITLE;
-import static android.app.Notification.EXTRA_INFO_TEXT;
-import static android.app.Notification.EXTRA_MESSAGES;
-import static android.app.Notification.EXTRA_SUB_TEXT;
-import static android.app.Notification.EXTRA_SUMMARY_TEXT;
-import static android.app.Notification.EXTRA_TEXT;
-import static android.app.Notification.EXTRA_TEXT_LINES;
-import static android.app.Notification.EXTRA_TITLE;
-import static android.app.Notification.EXTRA_TITLE_BIG;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class NLService extends NotificationListenerService {
     private final String TAG = "bulletin_board_svc";
     private final IBinder mBinder = new NLBinder();
+    private HashMap<StatusBarNotification, NtfcnsData> ntfcns_table = new HashMap<>();
+    private static RecyclerView.Adapter adapter;
+    private static ArrayList<NtfcnsDataModel> data;
+
 
     public class NLBinder extends Binder {
         NLService getService() {
@@ -46,6 +38,25 @@ public class NLService extends NotificationListenerService {
     public void onCreate() {
         Log.i(TAG,"**********  Service Created!");
         super.onCreate();
+
+        data = new ArrayList<NtfcnsDataModel>();
+
+
+        for (int i = 0; i < SampleNotifications.app_names.length; i++) {
+            data.add(new NtfcnsDataModel(
+                    SampleNotifications.placeholders[i],
+                    null,
+                    SampleNotifications.app_names[i],
+                    SampleNotifications.subtexts[i],
+                    SampleNotifications.post_times[i],
+                    SampleNotifications.ntfcns_titles[i],
+                    SampleNotifications.ntfcns_strings[i],
+                    SampleNotifications.ntfcns_bigtexts[i],
+                    null,
+                    null
+            ));
+        }
+        adapter = new Ntfcns_adapter(data);
     }
 
     @Override
@@ -104,31 +115,30 @@ public class NLService extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         Log.i(TAG,"**********  onNotificationPosted");
-        Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText + "\t" + sbn.getPackageName());
+        Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
+                + "\t" + sbn.getPackageName());
 
-        /**
-        Gson ntfcn_gson = new Gson();
-        String ntfcn_json = ntfcn_gson.toJson(sbn.getNotification());
-        Log.i(TAG, "Posted SBN JSON - \n" + ntfcn_json);
+        StatusBarNotification sbn_cloned = sbn.clone();
 
-
-        Intent i = new  Intent("com.vinithepooh.notifier.NOTIFICATION_LISTENER");
-
-        i.putExtra("notification_event","onNotificationPosted :" + sbn.getPackageName() + "\n");
-
-        sendBroadcast(i);
-         */
+        this.ntfcns_table.put(sbn_cloned, new NtfcnsData(
+                sbn.getPackageName() + sbn.getNotification().tickerText,
+                Ntfcns_state.ACTIVE
+                ));
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
         Log.i(TAG,"**********  onNotificationRemoved");
 
+        Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
+                + "\t" + sbn.getPackageName());
+
+        this.ntfcns_table.remove(sbn);
     }
+
 
     /** public API for clients */
     public String get_notifications() {
-
         String  ntfcns = "";
 
             /*
@@ -243,8 +253,6 @@ public class NLService extends NotificationListenerService {
                     Log.i(TAG,"Action :" + action.title + " Intent: " + action.actionIntent.toString() +  "\n");
                 }
 
-
-
             } catch(Exception e) {
                 Log.e(TAG, "Exception occurred while printing notifications: " + e.getMessage());
             }
@@ -255,6 +263,11 @@ public class NLService extends NotificationListenerService {
         }
 
         return ntfcns;
+    }
+
+
+    public RecyclerView.Adapter getAdapter() {
+        return adapter;
     }
 
 

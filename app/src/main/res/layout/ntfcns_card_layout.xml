@@ -131,26 +131,38 @@
             android:layout_weight="0.7"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/textViewntfcnTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal|left"
-                android:text="Notifications Title"
-                android:textStyle="bold"
-                android:textAlignment="viewStart"
-                android:textAppearance="?android:attr/textAppearanceSmall" />
+                <TextView
+                    android:id="@+id/textViewntfcnTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal|left"
+                    android:text="Notifications Title"
+                    android:textStyle="bold"
+                    android:textAlignment="viewStart"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
-            <TextView
-                android:id="@+id/textViewntfcn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal|left"
-                android:layout_marginBottom="5dp"
-                android:text="This is a test notification\n blah..."
-                android:textAlignment="viewStart"
-                android:textAppearance="?android:attr/textAppearanceSmall" />
+                <TextView
+                    android:id="@+id/textViewntfcn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal|left"
+                    android:layout_marginBottom="5dp"
+                    android:text="This is a test notification with a reallylongwordtotestwordbreaks\n blah..."
+                    android:textAlignment="viewStart"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
+            </LinearLayout>
+                <ImageView
+                    android:id="@+id/imageViewntfcn_icon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="1dp"
+                    android:layout_marginEnd="5dp"
+                    android:layout_weight="0.3"
+                    android:visibility="gone"
+                    />
+            </LinearLayout>
             <TextView
                 android:id="@+id/textViewntfcnBigText"
                 android:layout_width="wrap_content"
@@ -161,20 +173,17 @@
                 android:text="This is an expanded test notification\n blah..."
                 android:visibility="gone"
                 android:textAlignment="viewStart"
-                android:textAppearance="?android:attr/textAppearanceSmall" />
-        </LinearLayout>
-            <ImageView
-                android:id="@+id/imageViewntfcn_icon"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="1dp"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="0.3"
-                android:visibility="gone"
-                android:src="@drawable/ic_menu_camera"
+                android:textAppearance="?android:attr/textAppearanceSmall"
                 />
-        </LinearLayout>
+            <ImageView
+                android:id="@+id/imageViewBigPicture"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="2dp"
+                android:layout_marginEnd="5dp"
+                android:visibility="gone"
+                />
         </LinearLayout>
     </android.support.v7.widget.CardView>
 

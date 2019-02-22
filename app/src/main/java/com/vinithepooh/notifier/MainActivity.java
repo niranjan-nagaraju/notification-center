@@ -25,6 +25,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -41,13 +42,10 @@ public class MainActivity extends AppCompatActivity
     private NLService mBoundService;
     private boolean mIsBound;
 
-
-    private static RecyclerView.Adapter adapter;
-    private RecyclerView.LayoutManager layoutManager;
     private static RecyclerView recyclerView;
-    private static ArrayList<NtfcnsDataModel> data;
+    private RecyclerView.LayoutManager layoutManager;
     static View.OnClickListener cardsOnClickListener;
-    private static ArrayList<Integer> removedItems;
+    //private static ArrayList<Integer> removedItems;
 
 
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -61,6 +59,8 @@ public class MainActivity extends AppCompatActivity
             mBoundService = ((NLService.NLBinder)service).getService();
 
             Log.i(TAG,"Service connected");
+
+            recyclerView.setAdapter(mBoundService.getAdapter());
 
 
             // Tell the user about this for our demo.
@@ -162,7 +162,8 @@ public class MainActivity extends AppCompatActivity
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        data = new ArrayList<NtfcnsDataModel>();
+
+        /**
         Drawable twitter_icon;
         try {
             twitter_icon = getPackageManager().getApplicationIcon("com.twitter.android");
@@ -170,24 +171,10 @@ public class MainActivity extends AppCompatActivity
             twitter_icon = null;
             Log.i(TAG,"Couldnt find twitter icon" + e.getMessage());
         }
-        for (int i = 0; i < SampleNotifications.app_names.length; i++) {
-            data.add(new NtfcnsDataModel(
-                    SampleNotifications.placeholders[i],
-                    twitter_icon,
-                    SampleNotifications.app_names[i],
-                    SampleNotifications.subtexts[i],
-                    SampleNotifications.post_times[i],
-                    SampleNotifications.ntfcns_titles[i],
-                    SampleNotifications.ntfcns_strings[i],
-                    SampleNotifications.ntfcns_bigtexts[i],
-                    null
-            ));
-        }
+        */
 
-        removedItems = new ArrayList<Integer>();
+        //removedItems = new ArrayList<Integer>();
 
-        adapter = new Ntfcns_adapter(data);
-        recyclerView.setAdapter(adapter);
 
         TextView counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
         counterTv.setText(String.valueOf(99) + "+");
@@ -214,15 +201,22 @@ public class MainActivity extends AppCompatActivity
             TextView textViewApps = v.findViewById(R.id.textViewAppName);
             TextView textViewNtfcnsBigText = v.findViewById(R.id.textViewntfcnBigText);
             TextView textViewNtfcns = v.findViewById(R.id.textViewntfcn);
+            ImageView imageViewBigPicture = v.findViewById(R.id.imageViewBigPicture);
 
             /** Toggle big text and un-expanded text on card click */
             if(textViewNtfcns.getVisibility() == View.GONE) {
                 textViewNtfcnsBigText.setVisibility(View.GONE);
                 textViewNtfcns.setVisibility(View.VISIBLE);
+                imageViewBigPicture.setVisibility(View.GONE);
             } else {
                 textViewNtfcnsBigText.setVisibility(View.VISIBLE);
                 textViewNtfcns.setVisibility(View.GONE);
+                if(imageViewBigPicture.getDrawable() != null) {
+                    imageViewBigPicture.setVisibility(View.VISIBLE);
+                }
             }
+
+
 
             Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),
                     Snackbar.LENGTH_LONG)
@@ -351,7 +345,8 @@ public class MainActivity extends AppCompatActivity
                 Log.i(TAG, "getNofifcations() returned:\n" + notifications_str);
                 //txtView.setText(notifications_str);
             } catch (Exception e) {
-                Log.e(TAG, "Exception occurred while getting notifications from activity: " + e.getMessage());
+                Log.e(TAG, "Exception occurred while getting notifications from activity: " +
+                        e.getMessage());
 
             }
 

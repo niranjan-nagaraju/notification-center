@@ -18,12 +18,13 @@ public class NtfcnsDataModel {
     String ntfcn_contents;
     String ntfcn_bigtext;
     Drawable largeIcon;
+    Drawable ntfcn_bigpicture;
 
 
     public NtfcnsDataModel(String placeholder,
                            Drawable appIcon, String app_name, String subtext, String postTime,
                            String ntfcn_title, String ntfcn_contents, String ntfcn_bigtext,
-                           Drawable largeIcon) {
+                           Drawable largeIcon, Drawable ntfcn_bigpicture) {
         this.placeholder = placeholder;
         this.appIcon = appIcon;
         this.app_name = app_name;
@@ -33,6 +34,7 @@ public class NtfcnsDataModel {
         this.ntfcn_contents = ntfcn_contents;
         this.ntfcn_bigtext = ntfcn_bigtext;
         this.largeIcon = largeIcon;
+        this.ntfcn_bigpicture = ntfcn_bigpicture;
     }
 
 
@@ -71,5 +73,9 @@ public class NtfcnsDataModel {
 
     public Drawable getLargeIcon() {
         return largeIcon;
+    }
+
+    public Drawable getNtfcn_bigpicture() {
+        return ntfcn_bigpicture;
     }
 }
