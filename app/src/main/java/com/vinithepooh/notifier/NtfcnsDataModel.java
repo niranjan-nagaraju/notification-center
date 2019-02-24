@@ -1,6 +1,7 @@
 package com.vinithepooh.notifier;
 
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.Icon;
 
 /**
  * Created by vinithepooh on 14/02/19.

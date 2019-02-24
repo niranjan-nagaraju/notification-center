@@ -121,12 +121,25 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             imageViewAppIcon.setImageDrawable(dataSet.get(listPosition).getAppIcon());
 
         textViewApp.setText(dataSet.get(listPosition).getApp_name());
-        textViewSubText.setText(dataSet.get(listPosition).getSubtext());
+
+        if (dataSet.get(listPosition).getSubtext() != null)
+            textViewSubText.setText(dataSet.get(listPosition).getSubtext());
+        else
+            textViewSubText.setVisibility(View.INVISIBLE);
+
         textViewPostTime.setText(dataSet.get(listPosition).getPostTime());
 
         textViewNtfcnsTitle.setText(dataSet.get(listPosition).getNtfcn_title());
-        textViewNtfcns.setText(dataSet.get(listPosition).getNtfcn_contents());
-        textViewNtfcnsBigText.setText(dataSet.get(listPosition).getNtfcn_bigtext());
+
+        if (dataSet.get(listPosition).getNtfcn_contents() != null)
+            textViewNtfcns.setText(dataSet.get(listPosition).getNtfcn_contents());
+        else
+            textViewNtfcns.setVisibility(View.INVISIBLE);
+
+        if (dataSet.get(listPosition).getNtfcn_bigtext() != null)
+            textViewNtfcnsBigText.setText(dataSet.get(listPosition).getNtfcn_bigtext());
+        else
+            textViewNtfcnsBigText.setVisibility(View.INVISIBLE);
 
         if (dataSet.get(listPosition).getLargeIcon() != null) {
             imageViewLargeIcon.setImageDrawable(dataSet.get(listPosition).getLargeIcon());

@@ -60,9 +60,6 @@ public class MainActivity extends AppCompatActivity
 
             Log.i(TAG,"Service connected");
 
-            recyclerView.setAdapter(mBoundService.getAdapter());
-
-
             // Tell the user about this for our demo.
             Toast.makeText(getApplicationContext(),
                     "Service connected",
@@ -175,7 +172,6 @@ public class MainActivity extends AppCompatActivity
 
         //removedItems = new ArrayList<Integer>();
 
-
         TextView counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
         counterTv.setText(String.valueOf(99) + "+");
     }
@@ -216,8 +212,6 @@ public class MainActivity extends AppCompatActivity
                 }
             }
 
-
-
             Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),
                     Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
@@ -249,10 +243,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStart() {
         super.onStart();
-
-
         Log.i(TAG,"**********  Service registered onstart");
-
     }
 
 
@@ -261,7 +252,6 @@ public class MainActivity extends AppCompatActivity
         //disconnect sqlite3 db etc
         Log.i(TAG,"**********  Activity onstop");
         super.onStop();
-
     }
 
 
@@ -324,9 +314,7 @@ public class MainActivity extends AppCompatActivity
 
         MenuItem menuItem = null;
 
-
         Log.i(TAG, "Menu clicked: " + id);
-
         try {
             if (menuItem == item) {
                 Log.i(TAG, "Custom menu: ");
@@ -341,23 +329,24 @@ public class MainActivity extends AppCompatActivity
             // Handle the active notifications action
             Log.d(TAG, "Listing notifications");
             try {
-                String notifications_str = mBoundService.get_notifications();
-                Log.i(TAG, "getNofifcations() returned:\n" + notifications_str);
-                //txtView.setText(notifications_str);
+                mBoundService.get_notifications();
+                if (mBoundService.hasUpdates()) {
+                    Log.i(TAG, "we have updates");
+                    mBoundService.filter_active();
+                    recyclerView.setAdapter(mBoundService.getAdapter());
+                    mBoundService.getAdapter().notifyDataSetChanged();
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while getting notifications from activity: " +
                         e.getMessage());
-
             }
+        }
 
             /**
-
             NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
 
             Menu menu = navigationView.getMenu();
             menuItem = menu.add("My new menu");
-
-            /**
         } else if (id == R.id.nav_gallery) {
 
         } else if (id == R.id.nav_slideshow) {
@@ -368,7 +357,6 @@ public class MainActivity extends AppCompatActivity
 
         } else if (id == R.id.nav_send) {
             */
-        }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);

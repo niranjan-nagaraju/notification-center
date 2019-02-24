@@ -24,9 +24,11 @@ import java.util.HashMap;
 public class NLService extends NotificationListenerService {
     private final String TAG = "bulletin_board_svc";
     private final IBinder mBinder = new NLBinder();
-    private HashMap<StatusBarNotification, NtfcnsData> ntfcns_table = new HashMap<>();
+
     private static RecyclerView.Adapter adapter;
-    private static ArrayList<NtfcnsDataModel> data;
+
+    private NtfcnsData ntfcn_items;
+    private boolean hasChangedSinceLastUpdate = false;
 
 
     public class NLBinder extends Binder {
@@ -39,9 +41,7 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"**********  Service Created!");
         super.onCreate();
 
-        data = new ArrayList<NtfcnsDataModel>();
-
-
+        /**
         for (int i = 0; i < SampleNotifications.app_names.length; i++) {
             data.add(new NtfcnsDataModel(
                     SampleNotifications.placeholders[i],
@@ -55,8 +55,9 @@ public class NLService extends NotificationListenerService {
                     null,
                     null
             ));
-        }
-        adapter = new Ntfcns_adapter(data);
+        } */
+        //adapter = new Ntfcns_adapter(data);
+        ntfcn_items = new NtfcnsData(this.getApplicationContext());
     }
 
     @Override
@@ -119,28 +120,29 @@ public class NLService extends NotificationListenerService {
                 + "\t" + sbn.getPackageName());
 
         StatusBarNotification sbn_cloned = sbn.clone();
+        String condensed_string = NtfcnsData.getCondensedString(sbn);
 
-        this.ntfcns_table.put(sbn_cloned, new NtfcnsData(
-                sbn.getPackageName() + sbn.getNotification().tickerText,
-                Ntfcns_state.ACTIVE
-                ));
+        if (! ntfcn_items.addActive(condensed_string, sbn_cloned)) {
+            Log.i(TAG, "key: " + condensed_string + " already in active table");
+        } else {
+            Log.i(TAG, "Adding key: " + condensed_string + " to active table");
+            hasChangedSinceLastUpdate = true;
+        }
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
         Log.i(TAG,"**********  onNotificationRemoved");
-
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
-        this.ntfcns_table.remove(sbn);
+        StatusBarNotification sbn_cloned = sbn.clone();
+        String condensed_string = NtfcnsData.getCondensedString(sbn);
     }
 
 
     /** public API for clients */
-    public String get_notifications() {
-        String  ntfcns = "";
-
+    public void get_notifications() {
             /*
             if(intent.getStringExtra("command").equals("clearall")){
                 NLService.this.cancelAllNotifications();
@@ -151,118 +153,78 @@ public class NLService extends NotificationListenerService {
 
         Log.i(TAG,"**********  Showing notifications");
 
-        Log.i(TAG, "Notifications: " + getActiveNotifications());
+        for (StatusBarNotification asbn : getActiveNotifications()) {
+            StatusBarNotification sbn = asbn.clone();
+            String condensed_string = NtfcnsData.getCondensedString(sbn);
 
-        int i=1;
-        for (StatusBarNotification sbn : getActiveNotifications()) {
-            ntfcns += "ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText + "\t" + sbn.getPackageName()
-                    + "\n";
-            /**
-             Gson ntfcn_gson = new Gson();
-             String ntfcn_json = ntfcn_gson.toJson(sbn.getNotification());
-             Log.i(TAG, "SBN JSON - \n"); // + ntfcn_json);
-             */
-
-            Log.i(TAG,"\n **********  START Notification #" + i + "\n");
+            Log.i(TAG,"Condensed string: " + condensed_string);
 
             try {
+
                 PackageManager pm = getPackageManager();
 
                 String app_name = (String) pm.getApplicationLabel(
                         pm.getApplicationInfo(sbn.getPackageName(), PackageManager.GET_META_DATA));
-
 
                 Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText +
                         "\t" + sbn.getPackageName());
 
                 Log.i(TAG,"App name :" + app_name +  "\n");
 
-
-                /*
-
-                String title = sbn.getNotification().extras.getString(EXTRA_TITLE);
-                String text = sbn.getNotification().extras.getString(EXTRA_TEXT);
-
-
-
-                Log.i(TAG,"Title :" + title +  "\n");
-                Log.i(TAG,"Text :" + text + "\n");
-                Log.i(TAG, "Extra conv titles: " + sbn.getNotification().extras.getString(EXTRA_CONVERSATION_TITLE));
-
-                Log.i(TAG, "Extra info text: " + sbn.getNotification().extras.getString(EXTRA_INFO_TEXT));
-                Log.i(TAG, "Extra Messages: " + sbn.getNotification().extras.getString(EXTRA_MESSAGES));
-
-                Log.i(TAG, "Extra big text lines" + sbn.getNotification().extras.getString(EXTRA_BIG_TEXT));
-                Log.i(TAG, "Extra text lines" + sbn.getNotification().extras.getString(EXTRA_TEXT_LINES));
-                Log.i(TAG, "Extra sub text " + sbn.getNotification().extras.getString(EXTRA_SUB_TEXT));
-                Log.i(TAG, "Extra summary text " + sbn.getNotification().extras.getString(EXTRA_SUMMARY_TEXT));
-                Log.i(TAG, "Ticker text " + sbn.getNotification().tickerText);
-                Log.i(TAG, "SBN group? " + sbn.isGroup());
-
-                Log.i(TAG, "Extra title big: " + sbn.getNotification().extras.getString(EXTRA_TITLE_BIG));
-                Log.i(TAG, "Clearable? " + sbn.isClearable());
-
-                Log.i(TAG,"Click Action :" + sbn.getNotification().contentIntent.toString());
-
-
-                for (Notification.Action action: sbn.getNotification().actions) {
-                    Log.i(TAG,"Action :" + action.title + " Intent: " + action.actionIntent.toString() +  "\n");
+                if (! ntfcn_items.addActive(condensed_string, sbn)) {
+                    Log.i(TAG, "key: " + condensed_string + " already in active table");
+                } else {
+                    hasChangedSinceLastUpdate = true;
+                    Log.i(TAG, "Adding key: " + condensed_string + " to active table");
                 }
 
-                /** How to execute a pending intent
-                 if (app_name.equals("Tasker")) {
-                 Log.i(TAG,"Found tasker");
-                 // execute action
-                 Notification.Action[] actions = sbn.getNotification().actions;
-                 if (actions[0].title.equals("Disable")) {
-                 Log.i(TAG, "Found disable intent for tasker");
-                 actions[0].actionIntent.send(context, 0, intent);
-                 }
-                 } */
+                    Log.i(TAG, "Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) + "\n");
+                    Log.i(TAG, "Text :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) + "\n");
+                    Log.i(TAG, "Extra conv titles: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_CONVERSATION_TITLE));
 
-                Log.i(TAG, "COMPATS");
+                    Log.i(TAG, "Extra info text: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_INFO_TEXT));
+                    Log.i(TAG, "Extra Messages: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_MESSAGES));
 
+                    Log.i(TAG, "Extra big text lines" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT));
+                    Log.i(TAG, "Extra text lines" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT_LINES));
+                    Log.i(TAG, "Extra sub text " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUB_TEXT));
+                    Log.i(TAG, "Extra summary text " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUMMARY_TEXT));
 
-
-                Log.i(TAG,"Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) +  "\n");
-                Log.i(TAG,"Text :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) + "\n");
-                Log.i(TAG, "Extra conv titles: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_CONVERSATION_TITLE));
-
-                Log.i(TAG, "Extra info text: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_INFO_TEXT));
-                Log.i(TAG, "Extra Messages: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_MESSAGES));
-
-                Log.i(TAG, "Extra big text lines" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT));
-                Log.i(TAG, "Extra text lines" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT_LINES));
-                Log.i(TAG, "Extra sub text " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUB_TEXT));
-                Log.i(TAG, "Extra summary text " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUMMARY_TEXT));
-
-                Log.i(TAG, "Extra title big: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE_BIG));
+                    Log.i(TAG, "Extra title big: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE_BIG));
 
 
-                Log.i(TAG, "SBN group? " + sbn.isGroup());
-                Log.i(TAG, "Clearable? " + sbn.isClearable());
-                Log.i(TAG, "Posted at " + DateUtils.getRelativeTimeSpanString(sbn.getPostTime()));
-                Log.i(TAG, "Group key " + sbn.getGroupKey());
-                Log.i(TAG, "SBN key " + sbn.getKey());
-                Log.i(TAG, "TAG " + sbn.getTag());
-                Log.i(TAG,"Click Action :" + sbn.getNotification().contentIntent.toString());
-                Log.i(TAG,"Delete Action :" + sbn.getNotification().deleteIntent.toString());
+                    Log.i(TAG, "SBN group? " + sbn.isGroup());
+                    Log.i(TAG, "Clearable? " + sbn.isClearable());
+                    Log.i(TAG, "Posted at " + DateUtils.getRelativeTimeSpanString(sbn.getPostTime()));
+                    Log.i(TAG, "Group key " + sbn.getGroupKey());
+                    Log.i(TAG, "SBN key " + sbn.getKey());
+                    Log.i(TAG, "TAG " + sbn.getTag());
+                    Log.i(TAG, "Click Action :" + sbn.getNotification().contentIntent.toString());
+                    Log.i(TAG, "Delete Action :" + sbn.getNotification().deleteIntent.toString());
 
 
-                for (Notification.Action action: sbn.getNotification().actions) {
-                    Log.i(TAG,"Action :" + action.title + " Intent: " + action.actionIntent.toString() +  "\n");
-                }
-
+                    for (Notification.Action action : sbn.getNotification().actions) {
+                        Log.i(TAG, "Action :" + action.title + " Intent: " + action.actionIntent.toString() + "\n");
+                    }
             } catch(Exception e) {
                 Log.e(TAG, "Exception occurred while printing notifications: " + e.getMessage());
             }
-
-            Log.i(TAG,"**********  END Notification #" + i + "\n\n");
-
-            i++;
         }
+    }
 
-        return ntfcns;
+
+    public boolean hasUpdates() {
+        boolean status = hasChangedSinceLastUpdate;
+
+        /** reset it to false upon query */
+        hasChangedSinceLastUpdate = false;
+        return status;
+    }
+
+
+    public void filter_active() {
+        ArrayList active = ntfcn_items.filter_active();
+        adapter = new Ntfcns_adapter(active);
     }
 
 
