@@ -61,6 +61,11 @@ public class NLService extends NotificationListenerService {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_STICKY;
+    }
+
+    @Override
     public IBinder onBind(Intent mIntent) {
         /** Ref:
          * https://stackoverflow.com/questions/34625022/android-service-not-yet-bound-but-onbind-is-called/34640217#34640217
@@ -136,8 +141,16 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
-        StatusBarNotification sbn_cloned = sbn.clone();
         String condensed_string = NtfcnsData.getCondensedString(sbn);
+        StatusBarNotification active_sbn;
+        if ( (active_sbn = ntfcn_items.removeActive(condensed_string)) != null) {
+            Log.i(TAG, "key: " + condensed_string + " found in active table, removed");
+            /** Add to inactive table */
+            ntfcn_items.addInactive(condensed_string, active_sbn);
+            hasChangedSinceLastUpdate = true;
+        } else {
+            Log.i(TAG, "Couldn't find key: " + condensed_string + " to remove");
+        }
     }
 
 
@@ -200,8 +213,8 @@ public class NLService extends NotificationListenerService {
                     Log.i(TAG, "SBN key " + sbn.getKey());
                     Log.i(TAG, "TAG " + sbn.getTag());
                     Log.i(TAG, "Click Action :" + sbn.getNotification().contentIntent.toString());
-                    Log.i(TAG, "Delete Action :" + sbn.getNotification().deleteIntent.toString());
 
+                    Log.i(TAG, "Delete Action :" + sbn.getNotification().deleteIntent.toString());
 
                     for (Notification.Action action : sbn.getNotification().actions) {
                         Log.i(TAG, "Action :" + action.title + " Intent: " + action.actionIntent.toString() + "\n");
@@ -227,6 +240,15 @@ public class NLService extends NotificationListenerService {
         adapter = new Ntfcns_adapter(active);
     }
 
+    public void filter_all() {
+        ArrayList all = ntfcn_items.filter_all();
+        adapter = new Ntfcns_adapter(all);
+    }
+
+    public void prune() {
+        if (ntfcn_items.prune())
+            hasChangedSinceLastUpdate = true;
+    }
 
     public RecyclerView.Adapter getAdapter() {
         return adapter;

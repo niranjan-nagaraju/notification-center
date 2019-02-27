@@ -5,6 +5,7 @@ import android.graphics.drawable.Drawable;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -108,8 +109,12 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
         //separator.setBackgroundColor(Color.RED);
         // show separator and date only for card #0
+        // or when placeholder text has changed from the last card
         textViewPlaceholder.setText(dataSet.get(listPosition).getPlaceholder());
-        if (listPosition == 0) {
+        if (listPosition == 0 ||
+                (!dataSet.get(listPosition).getPlaceholder().equals(
+                        dataSet.get(listPosition-1).getPlaceholder()))
+                ) {
             separator.setVisibility(View.VISIBLE);
             textViewPlaceholder.setVisibility(View.VISIBLE);
         } else {
@@ -127,7 +132,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         else
             textViewSubText.setVisibility(View.INVISIBLE);
 
-        textViewPostTime.setText(dataSet.get(listPosition).getPostTime());
+        textViewPostTime.setText(
+                DateUtils.getRelativeTimeSpanString(dataSet.get(listPosition).getPostTime()));
 
         textViewNtfcnsTitle.setText(dataSet.get(listPosition).getNtfcn_title());
 

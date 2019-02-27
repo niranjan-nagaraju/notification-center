@@ -12,6 +12,12 @@
             app:actionLayout="@layout/menu_counter"
             />
 
+        <item
+            android:id="@+id/nav_allntfcns"
+            android:title="All Notifications"
+            android:icon="@drawable/ic_baseline_notifications_all"
+            />
+
         <!--
         <item
             android:id="@+id/nav_gallery"

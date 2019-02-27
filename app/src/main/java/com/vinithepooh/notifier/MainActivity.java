@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -64,6 +65,15 @@ public class MainActivity extends AppCompatActivity
             Toast.makeText(getApplicationContext(),
                     "Service connected",
                     Toast.LENGTH_SHORT).show();
+
+            /**
+             * Update cards on startup - show only active notifications
+
+            mBoundService.filter_active();
+            recyclerView.setAdapter(mBoundService.getAdapter());
+            mBoundService.getAdapter().notifyDataSetChanged();
+            */
+
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -100,6 +110,12 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // start the notification listener service
+        Intent mServiceIntent = new Intent(this, NLService.class);
+        startService(mServiceIntent);
+        doBindService();
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -141,14 +157,7 @@ public class MainActivity extends AppCompatActivity
                     Toast.LENGTH_LONG).show();
         }
 
-        // start the notification listener service
-        Intent mServiceIntent = new Intent(this, NLService.class);
-        startService(mServiceIntent);
-        doBindService();
 
-        //TODO:
-        // START runThread(); to be an UI update thread
-        // checks active notifications, and updates current view.
 
         cardsOnClickListener = new CardsOnClickListener(this);
 
@@ -174,6 +183,12 @@ public class MainActivity extends AppCompatActivity
 
         TextView counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
         counterTv.setText(String.valueOf(99) + "+");
+
+        new RefreshCardsAsyncTask().execute();
+
+        // START runThread(); to be an UI update thread
+        // checks active notifications, and updates current view.
+        runThread();
     }
 
 
@@ -244,7 +259,21 @@ public class MainActivity extends AppCompatActivity
     public void onStart() {
         super.onStart();
         Log.i(TAG,"**********  Service registered onstart");
+
+        /**
+        if (mBoundService != null) {
+            /**
+             * Update cards on startup - show only active notifications
+
+            mBoundService.get_notifications();;
+            mBoundService.filter_active();
+            recyclerView.setAdapter(mBoundService.getAdapter());
+            mBoundService.getAdapter().notifyDataSetChanged();
+
+        }
+         */
     }
+
 
 
     @Override
@@ -330,12 +359,21 @@ public class MainActivity extends AppCompatActivity
             Log.d(TAG, "Listing notifications");
             try {
                 mBoundService.get_notifications();
-                if (mBoundService.hasUpdates()) {
-                    Log.i(TAG, "we have updates");
-                    mBoundService.filter_active();
-                    recyclerView.setAdapter(mBoundService.getAdapter());
-                    mBoundService.getAdapter().notifyDataSetChanged();
-                }
+                mBoundService.filter_active();
+                recyclerView.setAdapter(mBoundService.getAdapter());
+                mBoundService.getAdapter().notifyDataSetChanged();
+            } catch (Exception e) {
+                Log.e(TAG, "Exception occurred while getting notifications from activity: " +
+                        e.getMessage());
+            }
+        } else if (id == R.id.nav_allntfcns) {
+            // Handle the all notifications action
+            Log.d(TAG, "Listing all notifications");
+            try {
+                mBoundService.get_notifications();
+                mBoundService.filter_all();
+                recyclerView.setAdapter(mBoundService.getAdapter());
+                mBoundService.getAdapter().notifyDataSetChanged();
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while getting notifications from activity: " +
                         e.getMessage());
@@ -376,22 +414,73 @@ public class MainActivity extends AppCompatActivity
                 while (true) {
                     try {
                         runOnUiThread(new Runnable() {
+                            int prune_counter = 0;
                             @Override
                             public void run() {
-                                Log.i(TAG, "Inside thread - updating notifications");
                                 if (!mIsBound || mBoundService == null) {
-                                    Log.i(TAG, "Not bound!");
+                                    // UI is not in focus
                                 } else {
-                                    //txtView.setText("Inside thread!");
+                                    //prune_counter ++;
+                                    /** prune entries every 1 minute */
+                                    //if (prune_counter > 60) {
+                                        Log.i(TAG, "Pruning entries");
+                                      //  prune_counter = 0;
+                                        mBoundService.prune();
+                                    //}
                                 }
                             }
                         });
-                        Thread.sleep(500);
+                        Thread.sleep(60000);
                     } catch (Exception e) {
                         Log.i(TAG, "Exception in thread:" + e.getMessage());
                     }
                 }
             }
         }.start();
+    }
+
+
+    private class RefreshCardsAsyncTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                Log.i(TAG, "Waiting for service...");
+                while (mBoundService == null);
+                Log.i(TAG, "Service bound - updating cards");
+                mBoundService.get_notifications();
+                mBoundService.filter_active();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG, "Exception in Asynctask - Error: " + e.getMessage());
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            try {
+                recyclerView.setAdapter(mBoundService.getAdapter());
+                mBoundService.getAdapter().notifyDataSetChanged();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG, "Exception in postExecute - Error: " + e.getMessage());
+            }
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+        }
+
+        @Override
+        protected void onCancelled(Void aVoid) {
+        }
+
+        @Override
+        protected void onCancelled() {
+        }
     }
 }

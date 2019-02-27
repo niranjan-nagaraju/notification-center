@@ -13,7 +13,7 @@ public class NtfcnsDataModel {
     Drawable appIcon;
     String app_name;
     String subtext;
-    String postTime;
+    long postTime;
 
     String ntfcn_title;
     String ntfcn_contents;
@@ -23,7 +23,7 @@ public class NtfcnsDataModel {
 
 
     public NtfcnsDataModel(String placeholder,
-                           Drawable appIcon, String app_name, String subtext, String postTime,
+                           Drawable appIcon, String app_name, String subtext, long postTime,
                            String ntfcn_title, String ntfcn_contents, String ntfcn_bigtext,
                            Drawable largeIcon, Drawable ntfcn_bigpicture) {
         this.placeholder = placeholder;
@@ -56,7 +56,7 @@ public class NtfcnsDataModel {
         return subtext;
     }
 
-    public String getPostTime() {
+    public long getPostTime() {
         return postTime;
     }
 
