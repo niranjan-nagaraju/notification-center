@@ -17,6 +17,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -26,6 +27,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -121,11 +125,79 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        final EditText editSearchText = findViewById(R.id.editSearchText);
+
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Search", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                /**
+                 *  If the search box already has some content
+                 *  treat this click as a 'post'/done button.
+                 *  and do the actual search.
+                 */
+                if (!editSearchText.getText().toString().equals("")) {
+                    editSearchText.clearFocus();
+
+                    Snackbar.make(findViewById(android.R.id.content), "searching for: " +
+                                    editSearchText.getText().toString(),
+                            Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+
+                    editSearchText.setText("");
+                } else {
+                    /**
+                     * Enable search input and open keyboard.
+                     */
+                    editSearchText.setVisibility(View.VISIBLE);
+                    editSearchText.requestFocus();
+                }
+            }
+        });
+
+        editSearchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    //performSearch();
+
+                    editSearchText.clearFocus();
+
+                    Snackbar.make(findViewById(android.R.id.content), "searching for: " +
+                                    editSearchText.getText().toString(),
+                            Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+
+                    editSearchText.setText("");
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        editSearchText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (hasFocus) {
+                    // show keyboard on focus
+                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+                } else {
+                    editSearchText.setVisibility(View.GONE);
+                    // hide keyboard
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                }
+            }
+        });
+
+        editSearchText.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (keyCode != KeyEvent.KEYCODE_SEARCH) {
+                    editSearchText.setText("");
+                    return true;
+                }
+                return false;
             }
         });
 
@@ -287,6 +359,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {

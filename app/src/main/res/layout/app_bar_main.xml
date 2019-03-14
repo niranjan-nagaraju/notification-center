@@ -16,7 +16,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            app:popupTheme="@style/AppTheme.PopupOverlay">
+
+            <EditText
+                android:id="@+id/editSearchText"
+                android:padding="5dip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_edittext"
+                android:backgroundTint="?attr/colorPrimaryDark"
+                android:backgroundTintMode="src_atop"
+                android:cursorVisible="true"
+                android:ems="10"
+                android:hint=" Search"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:textColor="@android:color/white"
+                android:textColorLink="@color/colorPrimary"
+                android:textCursorDrawable="@android:color/white"
+                android:includeFontPadding="true"
+                android:visibility="gone"
+                app:elevation="15dp"
+                tools:singleLine="true" />
+
+        </android.support.v7.widget.Toolbar>
 
     </android.support.design.widget.AppBarLayout>
 
