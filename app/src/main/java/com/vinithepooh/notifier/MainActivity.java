@@ -43,6 +43,9 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "bulletin_board";
+    private final String APP_NAME="Notifications Center";
+
+    // app names to menuitem references mapping
     private HashMap<String, MenuItem> app_menus;
     private NLService mBoundService;
     private boolean mIsBound;
@@ -50,7 +53,7 @@ public class MainActivity extends AppCompatActivity
     private static RecyclerView recyclerView;
     private RecyclerView.LayoutManager layoutManager;
     static View.OnClickListener cardsOnClickListener;
-    //private static ArrayList<Integer> removedItems;
+    private static ArrayList<Integer> removedItems;
 
 
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -67,17 +70,8 @@ public class MainActivity extends AppCompatActivity
 
             // Tell the user about this for our demo.
             Toast.makeText(getApplicationContext(),
-                    "Service connected",
+                    APP_NAME + ": Service connected",
                     Toast.LENGTH_SHORT).show();
-
-            /**
-             * Update cards on startup - show only active notifications
-
-            mBoundService.filter_active();
-            recyclerView.setAdapter(mBoundService.getAdapter());
-            mBoundService.getAdapter().notifyDataSetChanged();
-            */
-
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -90,7 +84,7 @@ public class MainActivity extends AppCompatActivity
             Log.i(TAG,"Service disconnected");
 
             Toast.makeText(getApplicationContext(),
-                    "Service disconnected",
+                    APP_NAME + ": Service disconnected",
                     Toast.LENGTH_SHORT).show();
         }
     };
@@ -128,6 +122,7 @@ public class MainActivity extends AppCompatActivity
         final EditText editSearchText = findViewById(R.id.editSearchText);
 
 
+        /** floating search button */
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -137,13 +132,15 @@ public class MainActivity extends AppCompatActivity
                  *  and do the actual search.
                  */
                 if (!editSearchText.getText().toString().equals("")) {
-                    editSearchText.clearFocus();
+                    String searchString = editSearchText.getText().toString();
 
+                    editSearchText.clearFocus();
                     Snackbar.make(findViewById(android.R.id.content), "searching for: " +
-                                    editSearchText.getText().toString(),
+                                    searchString,
                             Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
 
+                    /** clear text for future searches */
                     editSearchText.setText("");
                 } else {
                     /**
@@ -159,15 +156,15 @@ public class MainActivity extends AppCompatActivity
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                    //performSearch();
+                    String searchString = editSearchText.getText().toString();
 
                     editSearchText.clearFocus();
-
                     Snackbar.make(findViewById(android.R.id.content), "searching for: " +
-                                    editSearchText.getText().toString(),
+                                    searchString,
                             Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
 
+                    /** clear text for future searches */
                     editSearchText.setText("");
                     return true;
                 }
@@ -183,6 +180,7 @@ public class MainActivity extends AppCompatActivity
                     // show keyboard on focus
                     imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
                 } else {
+                    // hide searchbox
                     editSearchText.setVisibility(View.GONE);
                     // hide keyboard
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
@@ -193,10 +191,18 @@ public class MainActivity extends AppCompatActivity
         editSearchText.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if (keyCode != KeyEvent.KEYCODE_SEARCH) {
-                    editSearchText.setText("");
+                /**
+                 * back key pressed with search box in focus
+                 * Hide search and return to previous view.
+                 */
+                if (keyCode == KeyEvent.KEYCODE_BACK) {
+                    editSearchText.clearFocus();
+                    editSearchText.setVisibility(View.GONE);
+
+                    /** TODO: return to previous view */
                     return true;
                 }
+
                 return false;
             }
         });
@@ -216,20 +222,15 @@ public class MainActivity extends AppCompatActivity
                 "enabled_notification_listeners").contains(getApplicationContext().getPackageName()))
         {
             Log.i(TAG,"hasNotificationAccess YES");
-            Snackbar.make(findViewById(android.R.id.content), "Have notification access.",
-                    Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
         } else {
             //service is not enabled try to enabled by calling...
             Log.i(TAG,"hasNotificationAccess NO");
-            Snackbar.make(findViewById(android.R.id.content), "Does not have notification access, Enable from settings",
+            Snackbar.make(findViewById(android.R.id.content), APP_NAME + " does not have notification access, Enable from settings",
                     Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
-            Toast.makeText(getApplicationContext(), "Does not have notification access, Enable from settings",
+            Toast.makeText(getApplicationContext(), APP_NAME + " does not have notification access, Enable from settings",
                     Toast.LENGTH_LONG).show();
         }
-
-
 
         cardsOnClickListener = new CardsOnClickListener(this);
 
@@ -239,23 +240,12 @@ public class MainActivity extends AppCompatActivity
         layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
-
-
-        /**
-        Drawable twitter_icon;
-        try {
-            twitter_icon = getPackageManager().getApplicationIcon("com.twitter.android");
-        } catch (Exception e) {
-            twitter_icon = null;
-            Log.i(TAG,"Couldnt find twitter icon" + e.getMessage());
-        }
-        */
-
-        //removedItems = new ArrayList<Integer>();
+        removedItems = new ArrayList<Integer>();
 
         TextView counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
         counterTv.setText(String.valueOf(99) + "+");
 
+        /** refresh tasks on startup */
         new RefreshCardsAsyncTask().execute();
 
         // START runThread(); to be an UI update thread
@@ -268,7 +258,6 @@ public class MainActivity extends AppCompatActivity
 
         private final Context context;
         private final String TAG = "bulletin_board";
-
 
         private CardsOnClickListener(Context context) {
             this.context = context;
@@ -330,20 +319,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStart() {
         super.onStart();
-        Log.i(TAG,"**********  Service registered onstart");
-
-        /**
-        if (mBoundService != null) {
-            /**
-             * Update cards on startup - show only active notifications
-
-            mBoundService.get_notifications();;
-            mBoundService.filter_active();
-            recyclerView.setAdapter(mBoundService.getAdapter());
-            mBoundService.getAdapter().notifyDataSetChanged();
-
-        }
-         */
     }
 
 
@@ -351,7 +326,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStop() {
         //disconnect sqlite3 db etc
-        Log.i(TAG,"**********  Activity onstop");
         super.onStop();
     }
 
@@ -359,7 +333,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -384,7 +357,8 @@ public class MainActivity extends AppCompatActivity
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             Log.d(TAG, "Opening settings");
-            Intent intent=new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+            Intent intent=new Intent(
+                    "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
             startActivity(intent);
             return true;
         } else if (id == R.id.exitapp) {
