@@ -14,12 +14,21 @@
     tools:context="com.vinithepooh.notifier.MainActivity"
     tools:showIn="@layout/app_bar_main">
 
-
     <android.support.v7.widget.RecyclerView
         android:id="@+id/ntfcns_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="visible"
         android:scrollbars="vertical" />
+
+    <!-- TextView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:textSize="25dp"
+        android:text="You are all caught up!"
+        android:textColor="@color/colorPrimaryDark"
+        android:visibility="visible"
+        / -->
 
 
 </android.support.v4.widget.SwipeRefreshLayout>

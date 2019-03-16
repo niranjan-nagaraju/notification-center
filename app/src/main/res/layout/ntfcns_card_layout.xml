@@ -13,17 +13,18 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginRight="16dp"
+        android:elevation="5dp"
         android:orientation="horizontal">
 
         <View
             android:id="@+id/viewSeparator"
             android:layout_width="0dp"
-            android:layout_height="1dp"
+            android:layout_height="3dp"
             android:layout_marginTop="1dp"
             android:layout_marginLeft="10dp"
             android:layout_toEndOf="@+id/textViewPlaceholder"
             android:layout_gravity="center"
-            android:layout_weight="0.65"
+            android:layout_weight="0.75"
             android:background="@android:color/darker_gray" />
 
         <TextView
@@ -31,12 +32,12 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|right"
-            android:layout_weight="0.35"
-            android:layout_marginLeft="5dp"
-            android:text="Last seen yesterday"
+            android:layout_weight="0.25"
+            android:layout_marginLeft="1dp"
+            android:text="0 Minutes ago"
             android:textAlignment="viewEnd"
             android:textAppearance="?android:attr/textAppearanceSmall"
-            android:textColor="@android:color/darker_gray" />
+            android:textColor="@android:color/black" />
     </LinearLayout>
 
     <android.support.v7.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"

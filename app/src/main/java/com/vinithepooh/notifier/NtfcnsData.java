@@ -32,9 +32,23 @@ public class NtfcnsData {
         this.context = context;
     }
 
-    public static String getCondensedString(StatusBarNotification sbn) {
+    public String getCondensedString(StatusBarNotification sbn) {
+        PackageManager pm = context.getPackageManager();
+
+        String app_name;
+
+        try {
+            app_name = (String) pm.getApplicationLabel(
+                    pm.getApplicationInfo(sbn.getPackageName(), PackageManager.GET_META_DATA));
+        } catch (Exception e) {
+            app_name = sbn.getPackageName();
+            Log.e(TAG, "Error occurred getting app name - using pkg name" +
+                    e.getMessage());
+        }
+
         StringBuilder cStr = new StringBuilder();
 
+        cStr.append(app_name + "|");
         cStr.append(sbn.getPackageName() + "|");
         cStr.append(sbn.getNotification().tickerText + "|");
         cStr.append(sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) +  "|");
@@ -54,14 +68,21 @@ public class NtfcnsData {
         }};
 
 
-    /** Update active notifications into cards adapter */
-    public ArrayList<NtfcnsDataModel> filter_active() {
+    /**
+     * Update active notifications into cards adapter
+     * matching a search string
+     */
+    public ArrayList<NtfcnsDataModel> filter_active(String searchKey) {
         ArrayList<NtfcnsDataModel> data = new ArrayList<>();
         PackageManager pm = context.getPackageManager();
 
         for(Map.Entry<String, StatusBarNotification> entry : active_ntfcns_table.entrySet()) {
             String key = entry.getKey();
             StatusBarNotification sbn = entry.getValue();
+
+            /** match search string */
+            if (!key.toLowerCase().contains(searchKey.toLowerCase()))
+                continue;
 
             String app_name;
 
@@ -88,7 +109,7 @@ public class NtfcnsData {
             }
 
             data.add(new NtfcnsDataModel(
-        "Active Notifications",
+                    "Active Notifications",
                     app_icon,
                     app_name,
                     "" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUB_TEXT),
@@ -105,14 +126,19 @@ public class NtfcnsData {
         return data;
     }
 
+
     /** Update all inactive notifications into cards adapter */
-    public ArrayList<NtfcnsDataModel> filter_inactive() {
+    public ArrayList<NtfcnsDataModel> filter_inactive(String searchKey) {
         ArrayList<NtfcnsDataModel> data = new ArrayList<>();
         PackageManager pm = context.getPackageManager();
 
         for(Map.Entry<String, StatusBarNotification> entry : inactive_ntfcns_table.entrySet()) {
             String key = entry.getKey();
             StatusBarNotification sbn = entry.getValue();
+
+            /** match search string */
+            if (!key.toLowerCase().contains(searchKey.toLowerCase()))
+                continue;
 
             String app_name;
 
@@ -154,15 +180,6 @@ public class NtfcnsData {
 
         Collections.sort(data, postTimeComparator);
         return data;
-    }
-
-
-    /** Update all (active + inactive) notifications into cards adapter */
-    public ArrayList<NtfcnsDataModel> filter_all() {
-        ArrayList all = this.filter_active();
-        all.addAll(filter_inactive());
-
-        return all;
     }
 
 

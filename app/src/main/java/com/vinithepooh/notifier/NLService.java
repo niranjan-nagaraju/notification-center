@@ -125,7 +125,7 @@ public class NLService extends NotificationListenerService {
                 + "\t" + sbn.getPackageName());
 
         StatusBarNotification sbn_cloned = sbn.clone();
-        String condensed_string = NtfcnsData.getCondensedString(sbn_cloned);
+        String condensed_string = ntfcn_items.getCondensedString(sbn_cloned);
 
         if (! ntfcn_items.addActive(condensed_string, sbn_cloned)) {
             Log.i(TAG, "key: " + condensed_string + " already in active table");
@@ -141,7 +141,7 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
-        String condensed_string = NtfcnsData.getCondensedString(sbn);
+        String condensed_string = ntfcn_items.getCondensedString(sbn);
         StatusBarNotification active_sbn;
         if ( (active_sbn = ntfcn_items.removeActive(condensed_string)) != null) {
             Log.i(TAG, "key: " + condensed_string + " found in active table, removed");
@@ -168,7 +168,7 @@ public class NLService extends NotificationListenerService {
 
         for (StatusBarNotification asbn : getActiveNotifications()) {
             StatusBarNotification sbn = asbn.clone();
-            String condensed_string = NtfcnsData.getCondensedString(sbn);
+            String condensed_string = ntfcn_items.getCondensedString(sbn);
 
             Log.i(TAG,"Condensed string: " + condensed_string);
 
@@ -242,12 +242,26 @@ public class NLService extends NotificationListenerService {
 
 
     public void filter_active() {
-        ArrayList active = ntfcn_items.filter_active();
+        ArrayList active = ntfcn_items.filter_active("");
         adapter = new Ntfcns_adapter(active);
     }
 
     public void filter_all() {
-        ArrayList all = ntfcn_items.filter_all();
+        ArrayList all = ntfcn_items.filter_active("");
+        all.addAll(ntfcn_items.filter_inactive(""));
+        adapter = new Ntfcns_adapter(all);
+    }
+
+
+    public void filter_active(String searchKey) {
+        ArrayList active = ntfcn_items.filter_active(searchKey);
+        adapter = new Ntfcns_adapter(active);
+    }
+
+    public void filter_all(String searchKey) {
+        ArrayList all = ntfcn_items.filter_active(searchKey);
+        all.addAll(ntfcn_items.filter_inactive(searchKey));
+
         adapter = new Ntfcns_adapter(all);
     }
 

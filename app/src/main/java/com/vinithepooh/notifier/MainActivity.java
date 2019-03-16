@@ -58,7 +58,8 @@ public class MainActivity extends AppCompatActivity
     private RecyclerView.LayoutManager layoutManager;
     static View.OnClickListener cardsOnClickListener;
     private static ArrayList<Integer> removedItems;
-    TextView counterTv;
+    private TextView counterTv;
+    private boolean in_search = false;
 
     private SwipeRefreshLayout swipeLayout;
 
@@ -157,6 +158,7 @@ public class MainActivity extends AppCompatActivity
 
                     /** clear text for future searches */
                     editSearchText.setText("");
+                    performSearch(searchString);
                 } else {
                     /**
                      * Enable search input and open keyboard.
@@ -181,6 +183,8 @@ public class MainActivity extends AppCompatActivity
 
                     /** clear text for future searches */
                     editSearchText.setText("");
+
+                    performSearch(searchString);
                     return true;
                 }
                 return false;
@@ -214,7 +218,12 @@ public class MainActivity extends AppCompatActivity
                     editSearchText.clearFocus();
                     editSearchText.setVisibility(View.GONE);
 
-                    /** TODO: return to previous view */
+
+                    /**
+                     * on back-press, just return to 'un-filtered' current view
+                     * with all cards for current view regardless of search box string
+                     */
+                    refreshCards();
                     return true;
                 }
 
@@ -260,8 +269,6 @@ public class MainActivity extends AppCompatActivity
         counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
         counterTv.setText("");
 
-        /** refresh tasks on startup */
-        new RefreshCardsAsyncTask().execute();
 
         // START runThread(); to be an UI update thread
         // checks active notifications, and updates current view.
@@ -269,6 +276,9 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+    /**
+     * Refresh cards in current view
+     */
     private void refreshCards() {
         swipeLayout.setRefreshing(true);
         Log.i(TAG, "Refreshing cards!");
@@ -306,6 +316,30 @@ public class MainActivity extends AppCompatActivity
             swipeLayout.setRefreshing(false);
         }
     }
+
+
+    private void performSearch(String searchKey) {
+        mBoundService.get_notifications();
+        Log.i(TAG, "Searching for: " + searchKey);
+
+        switch (currentNotificationsView) {
+            case CurrentNotificationsView.TYPE_ACTIVE:
+                mBoundService.filter_active(searchKey);
+                break;
+            case CurrentNotificationsView.TYPE_ALL:
+                mBoundService.filter_all(searchKey);
+                break;
+            default:
+                Log.i(TAG, "Unknown current view: NOOP!");
+                break;
+        }
+
+        recyclerView.setAdapter(mBoundService.getAdapter());
+        mBoundService.getAdapter().notifyDataSetChanged();
+
+        in_search = true;
+    }
+
 
     private static class CardsOnClickListener implements View.OnClickListener {
 
@@ -372,6 +406,9 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStart() {
         super.onStart();
+
+        /** refresh tasks on startup */
+        new RefreshCardsAsyncTask().execute();
     }
 
 
@@ -386,9 +423,20 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
+            /**
+             * Back key pressed while in search results page,
+             * revert back to all cards for current view
+             */
+            if (in_search) {
+                in_search = false;
+                refreshCards();
+                return;
+            }
+
             super.onBackPressed();
         }
     }
