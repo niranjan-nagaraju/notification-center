@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -38,12 +39,15 @@ import java.util.HashMap;
 import java.util.ArrayList;
 
 
-
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "bulletin_board";
     private final String APP_NAME="Notifications Center";
+
+
+    private @CurrentNotificationsView.CurrentViewMode int currentNotificationsView =
+            CurrentNotificationsView.TYPE_ACTIVE;
 
     // app names to menuitem references mapping
     private HashMap<String, MenuItem> app_menus;
@@ -54,7 +58,9 @@ public class MainActivity extends AppCompatActivity
     private RecyclerView.LayoutManager layoutManager;
     static View.OnClickListener cardsOnClickListener;
     private static ArrayList<Integer> removedItems;
+    TextView counterTv;
 
+    private SwipeRefreshLayout swipeLayout;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -120,6 +126,15 @@ public class MainActivity extends AppCompatActivity
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         final EditText editSearchText = findViewById(R.id.editSearchText);
+        swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
+
+        swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                swipeLayout.setRefreshing(true);
+                refreshCards();
+            }
+        });
 
 
         /** floating search button */
@@ -242,8 +257,8 @@ public class MainActivity extends AppCompatActivity
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         removedItems = new ArrayList<Integer>();
 
-        TextView counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
-        counterTv.setText(String.valueOf(99) + "+");
+        counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
+        counterTv.setText("");
 
         /** refresh tasks on startup */
         new RefreshCardsAsyncTask().execute();
@@ -253,6 +268,44 @@ public class MainActivity extends AppCompatActivity
         runThread();
     }
 
+
+    private void refreshCards() {
+        swipeLayout.setRefreshing(true);
+        Log.i(TAG, "Refreshing cards!");
+        mBoundService.get_notifications();
+
+        switch (currentNotificationsView) {
+            case CurrentNotificationsView.TYPE_ACTIVE:
+                Log.i(TAG, "Refreshing active view cards!");
+                mBoundService.filter_active();
+
+                int num_active = mBoundService.getAdapter().getItemCount();
+                Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
+
+                /** Update active count label */
+                if (num_active > 99)
+                    counterTv.setText(String.valueOf(99) + "+");
+                else
+                    counterTv.setText(String.valueOf(num_active));
+                break;
+
+            case CurrentNotificationsView.TYPE_ALL:
+                Log.i(TAG, "Refreshing all view cards!");
+                mBoundService.filter_all();
+                break;
+
+            default:
+                Log.i(TAG, "Refreshing: NOOP!");
+                break;
+        }
+
+        recyclerView.setAdapter(mBoundService.getAdapter());
+        mBoundService.getAdapter().notifyDataSetChanged();
+
+        if (swipeLayout.isRefreshing()) {
+            swipeLayout.setRefreshing(false);
+        }
+    }
 
     private static class CardsOnClickListener implements View.OnClickListener {
 
@@ -405,10 +458,8 @@ public class MainActivity extends AppCompatActivity
             // Handle the active notifications action
             Log.d(TAG, "Listing notifications");
             try {
-                mBoundService.get_notifications();
-                mBoundService.filter_active();
-                recyclerView.setAdapter(mBoundService.getAdapter());
-                mBoundService.getAdapter().notifyDataSetChanged();
+                currentNotificationsView = CurrentNotificationsView.TYPE_ACTIVE;
+                refreshCards();
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while getting notifications from activity: " +
                         e.getMessage());
@@ -417,10 +468,8 @@ public class MainActivity extends AppCompatActivity
             // Handle the all notifications action
             Log.d(TAG, "Listing all notifications");
             try {
-                mBoundService.get_notifications();
-                mBoundService.filter_all();
-                recyclerView.setAdapter(mBoundService.getAdapter());
-                mBoundService.getAdapter().notifyDataSetChanged();
+                currentNotificationsView = CurrentNotificationsView.TYPE_ALL;
+                refreshCards();
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while getting notifications from activity: " +
                         e.getMessage());
@@ -510,6 +559,14 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Void aVoid) {
             try {
+                int num_active = mBoundService.getAdapter().getItemCount();
+                Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
+
+                if (num_active > 99)
+                    counterTv.setText(String.valueOf(99) + "+");
+                else
+                    counterTv.setText(String.valueOf(num_active));
+
                 recyclerView.setAdapter(mBoundService.getAdapter());
                 mBoundService.getAdapter().notifyDataSetChanged();
             } catch (Exception e) {

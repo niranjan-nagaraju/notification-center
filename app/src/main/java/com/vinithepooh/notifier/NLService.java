@@ -125,7 +125,7 @@ public class NLService extends NotificationListenerService {
                 + "\t" + sbn.getPackageName());
 
         StatusBarNotification sbn_cloned = sbn.clone();
-        String condensed_string = NtfcnsData.getCondensedString(sbn);
+        String condensed_string = NtfcnsData.getCondensedString(sbn_cloned);
 
         if (! ntfcn_items.addActive(condensed_string, sbn_cloned)) {
             Log.i(TAG, "key: " + condensed_string + " already in active table");
@@ -184,6 +184,10 @@ public class NLService extends NotificationListenerService {
 
                 Log.i(TAG,"App name :" + app_name +  "\n");
 
+                if ( sbn.isOngoing() || !sbn.isClearable() ) {
+                    continue;
+                }
+
                 if (! ntfcn_items.addActive(condensed_string, sbn)) {
                     Log.i(TAG, "key: " + condensed_string + " already in active table");
                 } else {
@@ -191,6 +195,7 @@ public class NLService extends NotificationListenerService {
                     Log.i(TAG, "Adding key: " + condensed_string + " to active table");
                 }
 
+                /**
                     Log.i(TAG, "Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) + "\n");
                     Log.i(TAG, "Text :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) + "\n");
                     Log.i(TAG, "Extra conv titles: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_CONVERSATION_TITLE));
@@ -219,6 +224,7 @@ public class NLService extends NotificationListenerService {
                     for (Notification.Action action : sbn.getNotification().actions) {
                         Log.i(TAG, "Action :" + action.title + " Intent: " + action.actionIntent.toString() + "\n");
                     }
+                 */
             } catch(Exception e) {
                 Log.e(TAG, "Exception occurred while printing notifications: " + e.getMessage());
             }
