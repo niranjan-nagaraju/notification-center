@@ -17,6 +17,8 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -127,8 +129,9 @@ public class MainActivity extends AppCompatActivity
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         final EditText editSearchText = findViewById(R.id.editSearchText);
-        swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
 
+        /** Refresh cards on swipe to bottom */
+        swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
         swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -231,6 +234,26 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        editSearchText.addTextChangedListener(new TextWatcher() {
+
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                Log.i(TAG, "Edit text changed");
+                String searchString = editSearchText.getText().toString();
+                performSearch(searchString);
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -280,8 +303,20 @@ public class MainActivity extends AppCompatActivity
      * Refresh cards in current view
      */
     private void refreshCards() {
+        final EditText editSearchText = findViewById(R.id.editSearchText);
+
         swipeLayout.setRefreshing(true);
         Log.i(TAG, "Refreshing cards!");
+
+        /** Refreshing cards on a search view should refresh current search results */
+        String searchString = editSearchText.getText().toString();
+        if (editSearchText.isFocused() &&
+                !searchString.isEmpty() ) {
+            performSearch(searchString);
+            swipeLayout.setRefreshing(false);
+            return;
+        }
+
         mBoundService.get_notifications();
 
         switch (currentNotificationsView) {

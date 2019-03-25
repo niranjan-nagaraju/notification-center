@@ -195,6 +195,25 @@ public class NLService extends NotificationListenerService {
                     Log.i(TAG, "Adding key: " + condensed_string + " to active table");
                 }
 
+                Log.i(TAG, "Template :" +
+                        sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE) + "\n");
+
+
+                if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE).equals(
+                        "android.app.Notification$MessagingStyle")
+                        ) {
+
+                    Log.e(TAG, "Messaging");
+                    Log.i(TAG, "Extra Messages: " +
+                            sbn.getNotification().extras.get(NotificationCompat.EXTRA_MESSAGES).toString());
+
+                    Log.i(TAG, "Extra Messages History: " +
+                            sbn.getNotification().extras.get(Notification.EXTRA_HISTORIC_MESSAGES));
+
+                    Log.i(TAG, "Extra conversation title: " +
+                            sbn.getNotification().extras.get(NotificationCompat.EXTRA_CONVERSATION_TITLE));
+                }
+
                 /**
                     Log.i(TAG, "Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) + "\n");
                     Log.i(TAG, "Text :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) + "\n");
