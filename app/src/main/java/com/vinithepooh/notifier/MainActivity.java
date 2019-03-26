@@ -293,9 +293,8 @@ public class MainActivity extends AppCompatActivity
         counterTv.setText("");
 
 
-        // START runThread(); to be an UI update thread
-        // checks active notifications, and updates current view.
-        runThread();
+        // TODO: START runThread(); to be an UI update thread
+        // checks active notifications, and updates current view every minute
     }
 
 
@@ -587,37 +586,6 @@ public class MainActivity extends AppCompatActivity
         doUnbindService();
     }
 
-    private void runThread() {
-        new Thread() {
-            public void run() {
-                while (true) {
-                    try {
-                        runOnUiThread(new Runnable() {
-                            int prune_counter = 0;
-                            @Override
-                            public void run() {
-                                if (!mIsBound || mBoundService == null) {
-                                    // UI is not in focus
-                                } else {
-                                    //prune_counter ++;
-                                    /** prune entries every 1 minute */
-                                    //if (prune_counter > 60) {
-                                        Log.i(TAG, "Pruning entries");
-                                      //  prune_counter = 0;
-                                        mBoundService.prune();
-                                    //}
-                                }
-                            }
-                        });
-                        Thread.sleep(60000);
-                    } catch (Exception e) {
-                        Log.i(TAG, "Exception in thread:" + e.getMessage());
-                    }
-                }
-            }
-        }.start();
-    }
-
 
     private class RefreshCardsAsyncTask extends AsyncTask<Void, Void, Void> {
         @Override
@@ -625,6 +593,13 @@ public class MainActivity extends AppCompatActivity
             try {
                 Log.i(TAG, "Waiting for service...");
                 while (mBoundService == null);
+
+                // wait until our notification listener service is connected
+                // to the notification manager
+                Log.i(TAG, "Waiting for listener to be connected...");
+
+                while(!mBoundService.isListenerConnected());
+
                 Log.i(TAG, "Service bound - updating cards");
                 mBoundService.get_notifications();
                 mBoundService.filter_active();

@@ -2,6 +2,7 @@ package com.vinithepooh.notifier;
 
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Icon;
 import android.os.Binder;
@@ -28,7 +29,12 @@ public class NLService extends NotificationListenerService {
     private static RecyclerView.Adapter adapter;
 
     private NtfcnsData ntfcn_items;
-    private boolean hasChangedSinceLastUpdate = false;
+
+    /** Has listener service connected to notfication manager */
+    private boolean listenerConnected = false;
+    public boolean isListenerConnected() {
+        return listenerConnected;
+    }
 
 
     public class NLBinder extends Binder {
@@ -62,7 +68,28 @@ public class NLService extends NotificationListenerService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
+        Log.i(TAG, "OnStartCommand");
+        Runnable r = new Runnable() {
+            public void run() {
+                String debug_tag = TAG + "_thread";
+                while (true) {
+                    try {
+                        Log.i(debug_tag, "Pruning old entries");
+                        ntfcn_items.prune();
+                        Thread.sleep(60*1000);
+                    } catch (Exception e) {
+                        Log.e(debug_tag, "Error in service thread" + e.getMessage());
+                        break;
+                    }
+
+                }
+                stopSelf();
+            }
+        };
+
+        Thread t = new Thread(r);
+        t.start();
+        return Service.START_STICKY;
     }
 
     @Override
@@ -106,6 +133,7 @@ public class NLService extends NotificationListenerService {
     @Override
     public void onListenerConnected() {
         Log.i(TAG, "Listener connected");
+        listenerConnected = true;
     }
 
 
@@ -118,21 +146,51 @@ public class NLService extends NotificationListenerService {
 
     }
 
+
+
+    /** Add a status bar notification from active notifications to the active table */
+    private void addActiveSBN(StatusBarNotification sbn) {
+        if ( sbn.isOngoing() || !sbn.isClearable() ) {
+            Log.i(TAG, "Ongoing or not clearable, ignoring");
+            return;
+        }
+
+        Object extra_text = sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT);
+        if (extra_text == null || extra_text.toString().isEmpty()) {
+            Log.i(TAG, "Notifications text is empty. Ignoring");
+            return;
+        }
+
+        if (sbn.getPackageName().equals("android")) {
+            Log.i(TAG, "System notifications. Ignoring");
+            return;
+        }
+
+        /** Try to find if sbn already exists in the table
+         * albeit with a different text
+         */
+        if (ntfcn_items.find(sbn)) {
+            Log.i(TAG,"skipping sbn as it already exists in the active table");
+            return;
+        }
+
+        String condensed_string = ntfcn_items.getCondensedString(sbn);
+        if (! ntfcn_items.addActive(condensed_string, sbn)) {
+            Log.i(TAG, "key: " + condensed_string + " already in active table");
+        } else {
+            Log.i(TAG, "Adding key: " + condensed_string + " to active table");
+        }
+    }
+
+
+
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         Log.i(TAG,"**********  onNotificationPosted");
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
-        StatusBarNotification sbn_cloned = sbn.clone();
-        String condensed_string = ntfcn_items.getCondensedString(sbn_cloned);
-
-        if (! ntfcn_items.addActive(condensed_string, sbn_cloned)) {
-            Log.i(TAG, "key: " + condensed_string + " already in active table");
-        } else {
-            Log.i(TAG, "Adding key: " + condensed_string + " to active table");
-            hasChangedSinceLastUpdate = true;
-        }
+        addActiveSBN(sbn);
     }
 
     @Override
@@ -145,11 +203,17 @@ public class NLService extends NotificationListenerService {
         StatusBarNotification active_sbn;
         if ( (active_sbn = ntfcn_items.removeActive(condensed_string)) != null) {
             Log.i(TAG, "key: " + condensed_string + " found in active table, removed");
+
             /** Add to inactive table */
-            ntfcn_items.addInactive(condensed_string, active_sbn);
-            hasChangedSinceLastUpdate = true;
+            ntfcn_items.addInactive(condensed_string, active_sbn.clone());
+            return;
         } else {
             Log.i(TAG, "Couldn't find key: " + condensed_string + " to remove");
+        }
+
+        if (ntfcn_items.remove(sbn)) {
+            Log.i(TAG, "key: " + condensed_string + " found SBN by reference, removed");
+            ntfcn_items.addInactive(condensed_string, active_sbn.clone());
         }
     }
 
@@ -166,8 +230,8 @@ public class NLService extends NotificationListenerService {
 
         Log.i(TAG,"**********  Showing notifications");
 
-        for (StatusBarNotification asbn : getActiveNotifications()) {
-            StatusBarNotification sbn = asbn.clone();
+        for (StatusBarNotification sbn : getActiveNotifications()) {
+            //StatusBarNotification asbn = sbn.clone();
             String condensed_string = ntfcn_items.getCondensedString(sbn);
 
             Log.i(TAG,"Condensed string: " + condensed_string);
@@ -184,17 +248,9 @@ public class NLService extends NotificationListenerService {
 
                 Log.i(TAG,"App name :" + app_name +  "\n");
 
-                if ( sbn.isOngoing() || !sbn.isClearable() ) {
-                    continue;
-                }
+                addActiveSBN(sbn);
 
-                if (! ntfcn_items.addActive(condensed_string, sbn)) {
-                    Log.i(TAG, "key: " + condensed_string + " already in active table");
-                } else {
-                    hasChangedSinceLastUpdate = true;
-                    Log.i(TAG, "Adding key: " + condensed_string + " to active table");
-                }
-
+                /**
                 Log.i(TAG, "Template :" +
                         sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE) + "\n");
 
@@ -213,6 +269,7 @@ public class NLService extends NotificationListenerService {
                     Log.i(TAG, "Extra conversation title: " +
                             sbn.getNotification().extras.get(NotificationCompat.EXTRA_CONVERSATION_TITLE));
                 }
+                 */
 
                 /**
                     Log.i(TAG, "Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) + "\n");
@@ -251,14 +308,6 @@ public class NLService extends NotificationListenerService {
     }
 
 
-    public boolean hasUpdates() {
-        boolean status = hasChangedSinceLastUpdate;
-
-        /** reset it to false upon query */
-        hasChangedSinceLastUpdate = false;
-        return status;
-    }
-
 
     public void filter_active() {
         ArrayList active = ntfcn_items.filter_active("");
@@ -284,10 +333,6 @@ public class NLService extends NotificationListenerService {
         adapter = new Ntfcns_adapter(all);
     }
 
-    public void prune() {
-        if (ntfcn_items.prune())
-            hasChangedSinceLastUpdate = true;
-    }
 
     public RecyclerView.Adapter getAdapter() {
         return adapter;

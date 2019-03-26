@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by vinithepooh on 20/02/19.
@@ -22,10 +23,11 @@ import java.util.Map;
 
 
 public class NtfcnsData {
-    private HashMap<String, StatusBarNotification> active_ntfcns_table = new HashMap<>();
-    private HashMap<String, StatusBarNotification> inactive_ntfcns_table = new HashMap<>();
+    private ConcurrentHashMap<String, StatusBarNotification> active_ntfcns_table = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, StatusBarNotification> inactive_ntfcns_table = new ConcurrentHashMap<>();
     private Context context = null;
     private final String TAG = "bulletin_board_data";
+    private long expire_after = 120*60*1000;
 
 
     public NtfcnsData(Context context) {
@@ -50,7 +52,6 @@ public class NtfcnsData {
 
         cStr.append(app_name + "|");
         cStr.append(sbn.getPackageName() + "|");
-        cStr.append(sbn.getNotification().tickerText + "|");
         cStr.append(sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) +  "|");
         cStr.append(sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUB_TEXT) + "|");
         cStr.append(sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUMMARY_TEXT) + "|");
@@ -66,6 +67,57 @@ public class NtfcnsData {
             // reverse chronological order of notifications
             return Long.compare(s2.postTime, s1.postTime);
         }};
+
+
+    /**
+     * Scour through the active table by value
+     * to see if we already have the same status bar notification stored
+     * under a different text key (presumably because the notification changed/updated)
+     */
+    public boolean find (StatusBarNotification sbn) {
+        Iterator<Map.Entry<String, StatusBarNotification>> iter =
+                active_ntfcns_table.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry<String, StatusBarNotification> entry = iter.next();
+            String key = entry.getKey();
+            StatusBarNotification sbn_entry = entry.getValue();
+
+            if (sbn.equals(sbn_entry)) {
+                Log.i(TAG, "SBN already exists with key text: " + key);
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * Scour through the active table by value
+     * to see if we already have the same status bar notification stored
+     * If yes, remove it
+     */
+    public boolean remove (StatusBarNotification sbn) {
+        Iterator<Map.Entry<String, StatusBarNotification>> iter =
+                active_ntfcns_table.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry<String, StatusBarNotification> entry = iter.next();
+            String key = entry.getKey();
+            StatusBarNotification sbn_entry = entry.getValue();
+
+            if (sbn.equals(sbn_entry)) {
+                Log.i(TAG, "SBN already exists with key text: " + key);
+                Log.i(TAG, "removing it from active table");
+
+                iter.remove();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 
     /**
@@ -223,7 +275,7 @@ public class NtfcnsData {
              * remove entries older than 2 hours
              * TODO: make this 'interval' configurable
              */
-            if (current > (sbn.getPostTime() + 120*60*1000)) {
+            if (current > (sbn.getPostTime() + expire_after)) {
                 Log.i(TAG, "Pruning entry with key: " + key);
                 iter.remove();
                 changed = true;
