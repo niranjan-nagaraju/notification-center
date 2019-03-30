@@ -238,9 +238,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                Log.i(TAG, "Edit text changed");
-                String searchString = editSearchText.getText().toString();
-                performSearch(searchString);
+
             }
 
             @Override
@@ -250,7 +248,9 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void afterTextChanged(Editable editable) {
-
+                Log.i(TAG, "Edit text changed");
+                String searchString = editSearchText.getText().toString();
+                performSearch(searchString);
             }
         });
 
@@ -316,7 +316,7 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        mBoundService.get_notifications();
+        mBoundService.sync_notifications();
 
         switch (currentNotificationsView) {
             case CurrentNotificationsView.TYPE_ACTIVE:
@@ -353,7 +353,7 @@ public class MainActivity extends AppCompatActivity
 
 
     private void performSearch(String searchKey) {
-        mBoundService.get_notifications();
+        //mBoundService.sync_notifications();
         Log.i(TAG, "Searching for: " + searchKey);
 
         switch (currentNotificationsView) {
@@ -601,8 +601,24 @@ public class MainActivity extends AppCompatActivity
                 while(!mBoundService.isListenerConnected());
 
                 Log.i(TAG, "Service bound - updating cards");
-                mBoundService.get_notifications();
-                mBoundService.filter_active();
+                mBoundService.sync_notifications();
+
+                /**
+                 * if search box is up, and has some search string
+                 * filter current view based on search results
+                 */
+                String searchString = "";
+                final EditText editSearchText = findViewById(R.id.editSearchText);
+                if (editSearchText != null &&
+                        editSearchText.isFocused()) {
+                    searchString = editSearchText.getText().toString();
+                    in_search = true;
+                }
+
+                if ( currentNotificationsView == CurrentNotificationsView.TYPE_ALL)
+                    mBoundService.filter_all(searchString);
+                else
+                    mBoundService.filter_active(searchString);
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG, "Exception in Asynctask - Error: " + e.getMessage());

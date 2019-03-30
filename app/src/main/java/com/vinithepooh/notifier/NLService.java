@@ -29,6 +29,7 @@ public class NLService extends NotificationListenerService {
     private static RecyclerView.Adapter adapter;
 
     private NtfcnsData ntfcn_items;
+    private long time_since_last_resync = 0;
 
     /** Has listener service connected to notfication manager */
     private boolean listenerConnected = false;
@@ -74,9 +75,19 @@ public class NLService extends NotificationListenerService {
                 String debug_tag = TAG + "_thread";
                 while (true) {
                     try {
+                        /** Resync active notifications every 10 minutes */
+                        time_since_last_resync += 1;
+                        if (time_since_last_resync > 10) {
+                            time_since_last_resync = 0;
+                            Log.i(TAG, "Resync in progress!");
+                            sync_notifications();
+                        }
+
+                        /** sleep for 1 minute */
+                        Thread.sleep(60*1000);
+
                         Log.i(debug_tag, "Pruning old entries");
                         ntfcn_items.prune();
-                        Thread.sleep(60*1000);
                     } catch (Exception e) {
                         Log.e(debug_tag, "Error in service thread" + e.getMessage());
                         break;
@@ -166,14 +177,6 @@ public class NLService extends NotificationListenerService {
             return;
         }
 
-        /** Try to find if sbn already exists in the table
-         * albeit with a different text
-         */
-        if (ntfcn_items.find(sbn)) {
-            Log.i(TAG,"skipping sbn as it already exists in the active table");
-            return;
-        }
-
         String condensed_string = ntfcn_items.getCondensedString(sbn);
         if (! ntfcn_items.addActive(condensed_string, sbn)) {
             Log.i(TAG, "key: " + condensed_string + " already in active table");
@@ -200,35 +203,27 @@ public class NLService extends NotificationListenerService {
                 + "\t" + sbn.getPackageName());
 
         String condensed_string = ntfcn_items.getCondensedString(sbn);
-        StatusBarNotification active_sbn;
-        if ( (active_sbn = ntfcn_items.removeActive(condensed_string)) != null) {
+        if ( ntfcn_items.addInactive(condensed_string, sbn) ) {
             Log.i(TAG, "key: " + condensed_string + " found in active table, removed");
-
-            /** Add to inactive table */
-            ntfcn_items.addInactive(condensed_string, active_sbn.clone());
-            return;
         } else {
             Log.i(TAG, "Couldn't find key: " + condensed_string + " to remove");
-        }
-
-        if (ntfcn_items.remove(sbn)) {
-            Log.i(TAG, "key: " + condensed_string + " found SBN by reference, removed");
-            ntfcn_items.addInactive(condensed_string, active_sbn.clone());
         }
     }
 
 
-    /** public API for clients */
-    public void get_notifications() {
-            /*
-            if(intent.getStringExtra("command").equals("clearall")){
-                NLService.this.cancelAllNotifications();
-            }
-            else
-             */
-        Log.i(TAG,"**********  get_notifications");
+    /**
+     * Sync status bar notifications
+     * mark ones that are no longer active as inactive in the table
+     */
+    public void sync_notifications() {
+        Log.i(TAG,"**********  sync_notifications");
 
         Log.i(TAG,"**********  Showing notifications");
+
+        /**
+         * Initially mark everything in notifications table as inactive
+         */
+        ntfcn_items.markAllInactive();
 
         for (StatusBarNotification sbn : getActiveNotifications()) {
             //StatusBarNotification asbn = sbn.clone();
@@ -248,6 +243,9 @@ public class NLService extends NotificationListenerService {
 
                 Log.i(TAG,"App name :" + app_name +  "\n");
 
+                /** Add a new active notification entry or
+                 * just mark it as active if it already exists
+                 */
                 addActiveSBN(sbn);
 
                 /**
