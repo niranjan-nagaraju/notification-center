@@ -302,76 +302,86 @@ public class MainActivity extends AppCompatActivity
      * Refresh cards in current view
      */
     private void refreshCards() {
-        final EditText editSearchText = findViewById(R.id.editSearchText);
+        try {
+            final EditText editSearchText = findViewById(R.id.editSearchText);
 
-        swipeLayout.setRefreshing(true);
-        Log.i(TAG, "Refreshing cards!");
+            swipeLayout.setRefreshing(true);
+            Log.i(TAG, "Refreshing cards!");
 
-        /** Refreshing cards on a search view should refresh current search results */
-        String searchString = editSearchText.getText().toString();
-        if (editSearchText.isFocused() &&
-                !searchString.isEmpty() ) {
-            performSearch(searchString);
-            swipeLayout.setRefreshing(false);
-            return;
-        }
+            /** Refreshing cards on a search view should refresh current search results */
+            String searchString = editSearchText.getText().toString();
+            if (editSearchText.isFocused() &&
+                    !searchString.isEmpty()) {
+                performSearch(searchString);
+                swipeLayout.setRefreshing(false);
+                return;
+            }
 
-        mBoundService.sync_notifications();
+            mBoundService.sync_notifications();
 
-        switch (currentNotificationsView) {
-            case CurrentNotificationsView.TYPE_ACTIVE:
-                Log.i(TAG, "Refreshing active view cards!");
-                mBoundService.filter_active();
+            switch (currentNotificationsView) {
+                case CurrentNotificationsView.TYPE_ACTIVE:
+                    Log.i(TAG, "Refreshing active view cards!");
+                    mBoundService.filter_active();
 
-                int num_active = mBoundService.getAdapter().getItemCount();
-                Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
+                    int num_active = mBoundService.getAdapter().getItemCount();
+                    Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
-                /** Update active count label */
-                if (num_active > 99)
-                    counterTv.setText(String.valueOf(99) + "+");
-                else
-                    counterTv.setText(String.valueOf(num_active));
-                break;
+                    /** Update active count label */
+                    if (num_active > 99)
+                        counterTv.setText(String.valueOf(99) + "+");
+                    else
+                        counterTv.setText(String.valueOf(num_active));
+                    break;
 
-            case CurrentNotificationsView.TYPE_ALL:
-                Log.i(TAG, "Refreshing all view cards!");
-                mBoundService.filter_all();
-                break;
+                case CurrentNotificationsView.TYPE_ALL:
+                    Log.i(TAG, "Refreshing all view cards!");
+                    mBoundService.filter_all();
+                    break;
 
-            default:
-                Log.i(TAG, "Refreshing: NOOP!");
-                break;
-        }
+                default:
+                    Log.i(TAG, "Refreshing: NOOP!");
+                    break;
+            }
 
-        recyclerView.setAdapter(mBoundService.getAdapter());
-        mBoundService.getAdapter().notifyDataSetChanged();
+            recyclerView.setAdapter(mBoundService.getAdapter());
+            mBoundService.getAdapter().notifyDataSetChanged();
 
-        if (swipeLayout.isRefreshing()) {
-            swipeLayout.setRefreshing(false);
+            if (swipeLayout.isRefreshing()) {
+                swipeLayout.setRefreshing(false);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Exception occurred while refreshing cards: " +
+                    e.getMessage());
         }
     }
 
 
     private void performSearch(String searchKey) {
-        //mBoundService.sync_notifications();
-        Log.i(TAG, "Searching for: " + searchKey);
+        try {
+            //mBoundService.sync_notifications();
+            Log.i(TAG, "Searching for: " + searchKey);
 
-        switch (currentNotificationsView) {
-            case CurrentNotificationsView.TYPE_ACTIVE:
-                mBoundService.filter_active(searchKey);
-                break;
-            case CurrentNotificationsView.TYPE_ALL:
-                mBoundService.filter_all(searchKey);
-                break;
-            default:
-                Log.i(TAG, "Unknown current view: NOOP!");
-                break;
+            switch (currentNotificationsView) {
+                case CurrentNotificationsView.TYPE_ACTIVE:
+                    mBoundService.filter_active(searchKey);
+                    break;
+                case CurrentNotificationsView.TYPE_ALL:
+                    mBoundService.filter_all(searchKey);
+                    break;
+                default:
+                    Log.i(TAG, "Unknown current view: NOOP!");
+                    break;
+            }
+
+            recyclerView.setAdapter(mBoundService.getAdapter());
+            mBoundService.getAdapter().notifyDataSetChanged();
+
+            in_search = true;
+        } catch (Exception e) {
+            Log.e(TAG, "Exception occurred during search: " +
+                    e.getMessage());
         }
-
-        recyclerView.setAdapter(mBoundService.getAdapter());
-        mBoundService.getAdapter().notifyDataSetChanged();
-
-        in_search = true;
     }
 
 
@@ -543,7 +553,7 @@ public class MainActivity extends AppCompatActivity
                 currentNotificationsView = CurrentNotificationsView.TYPE_ACTIVE;
                 refreshCards();
             } catch (Exception e) {
-                Log.e(TAG, "Exception occurred while getting notifications from activity: " +
+                Log.e(TAG, "Exception occurred while refreshing active notifications: " +
                         e.getMessage());
             }
         } else if (id == R.id.nav_allntfcns) {
@@ -553,7 +563,7 @@ public class MainActivity extends AppCompatActivity
                 currentNotificationsView = CurrentNotificationsView.TYPE_ALL;
                 refreshCards();
             } catch (Exception e) {
-                Log.e(TAG, "Exception occurred while getting notifications from activity: " +
+                Log.e(TAG, "Exception occurred while refreshing all notifications: " +
                         e.getMessage());
             }
         }
