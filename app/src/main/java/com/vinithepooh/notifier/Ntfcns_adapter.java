@@ -6,6 +6,8 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
+import android.text.util.Linkify;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +17,8 @@ import android.widget.TextView;
 import org.w3c.dom.Text;
 
 import java.util.ArrayList;
+
+
 /**
  * Created by vinithepooh on 14/02/19.
  */
@@ -86,10 +90,10 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewPostTime = holder.textViewPostTime;
 
         TextView textViewNtfcnsTitle = holder.textViewNtfcnsTitle;
-        TextView textViewNtfcns = holder.textViewNtfcns;
-        TextView  textViewNtfcnsBigText= holder.textViewNtfcnsBigText;
+        final TextView textViewNtfcns = holder.textViewNtfcns;
+        final TextView  textViewNtfcnsBigText= holder.textViewNtfcnsBigText;
         ImageView imageViewLargeIcon = holder.imageViewLargeIcon;
-        ImageView imageViewBigPicture = holder.imageViewBigPicture;
+        final ImageView imageViewBigPicture = holder.imageViewBigPicture;
 
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
@@ -142,10 +146,12 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         else
             textViewNtfcns.setVisibility(View.INVISIBLE);
 
+
         if (dataSet.get(listPosition).getNtfcn_bigtext() != null)
             textViewNtfcnsBigText.setText(dataSet.get(listPosition).getNtfcn_bigtext());
         else
             textViewNtfcnsBigText.setVisibility(View.INVISIBLE);
+
 
         if (dataSet.get(listPosition).getLargeIcon() != null) {
             imageViewLargeIcon.setImageDrawable(dataSet.get(listPosition).getLargeIcon());
@@ -154,6 +160,34 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         if (dataSet.get(listPosition).getNtfcn_bigpicture() != null) {
             imageViewBigPicture.setImageDrawable(dataSet.get(listPosition).getNtfcn_bigpicture());
         }
+
+        textViewNtfcns.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                /**
+                 * Toggle short text visibility to big text
+                 * and expanded text on card click
+                 */
+                textViewNtfcnsBigText.setVisibility(View.VISIBLE);
+                textViewNtfcns.setVisibility(View.GONE);
+                if(imageViewBigPicture.getDrawable() != null) {
+                    imageViewBigPicture.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
+        textViewNtfcnsBigText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                /**
+                 * Toggle big text visibility to short text
+                 * and un-expanded text on card click
+                 */
+                textViewNtfcnsBigText.setVisibility(View.GONE);
+                textViewNtfcns.setVisibility(View.VISIBLE);
+                imageViewBigPicture.setVisibility(View.GONE);
+            }
+        });
     }
 
     @Override
