@@ -35,6 +35,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,7 +54,7 @@ public class MainActivity extends AppCompatActivity
 
     // app names to menuitem references mapping
     private HashMap<String, MenuItem> app_menus;
-    private NLService mBoundService;
+    private static NLService mBoundService;
     private boolean mIsBound;
 
     private static RecyclerView recyclerView;
@@ -62,6 +63,8 @@ public class MainActivity extends AppCompatActivity
     private static ArrayList<Integer> removedItems;
     private TextView counterTv;
     private boolean in_search = false;
+
+    private static EditText editSearchText;
 
     private SwipeRefreshLayout swipeLayout;
 
@@ -128,7 +131,7 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        final EditText editSearchText = findViewById(R.id.editSearchText);
+        editSearchText = findViewById(R.id.editSearchText);
 
         /** Refresh cards on swipe to bottom */
         swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
@@ -303,8 +306,6 @@ public class MainActivity extends AppCompatActivity
      */
     private void refreshCards() {
         try {
-            final EditText editSearchText = findViewById(R.id.editSearchText);
-
             swipeLayout.setRefreshing(true);
             Log.i(TAG, "Refreshing cards!");
 
@@ -324,7 +325,7 @@ public class MainActivity extends AppCompatActivity
                     Log.i(TAG, "Refreshing active view cards!");
                     mBoundService.filter_active();
 
-                    int num_active = mBoundService.getAdapter().getItemCount();
+                    int num_active = mBoundService.getAdapter().getItemCount() - 1;
                     Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
                     /** Update active count label */
@@ -396,8 +397,13 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public void onClick(View v) {
-            Log.i(TAG, "Card clicked!");
-            handleCardClick(v);
+            try {
+                Log.i(TAG, "Card clicked:  " + recyclerView.getChildAdapterPosition(v));
+                //Log.(TAG, "pos: " + recyclerView.getChildAdapterPosition(v));
+                handleCardClick(v);
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting child position: " + e.getMessage());
+            }
         }
 
         private void handleCardClick(View v) {
@@ -405,6 +411,62 @@ public class MainActivity extends AppCompatActivity
             TextView textViewNtfcnsBigText = v.findViewById(R.id.textViewntfcnBigText);
             TextView textViewNtfcns = v.findViewById(R.id.textViewntfcn);
             ImageView imageViewBigPicture = v.findViewById(R.id.imageViewBigPicture);
+
+            LinearLayout top_card_layout = v.findViewById(R.id.top_card_layout);
+            LinearLayout group_card_layout = v.findViewById(R.id.group_card_layout);
+
+            /** This is a group-heading card */
+            if (group_card_layout.getVisibility() == View.VISIBLE) {
+                final int expanded = 0;
+                final int collapsed = 1;
+                TextView textViewPlaceholder = (TextView) v.findViewById(R.id.textViewPlaceholder);
+                Log.i(TAG, "Clicked on group header: " +  textViewPlaceholder.getText().toString());
+
+                if (textViewPlaceholder.getTag() == null)
+                    textViewPlaceholder.setTag(expanded);
+
+                int listposition = recyclerView.getChildAdapterPosition(v);
+
+                try {
+                    if ((int)textViewPlaceholder.getTag() == expanded) {
+                        Log.i(TAG, "Collapse view: " + listposition);
+
+                        int num_removed = mBoundService.collapse_group(listposition);
+                        recyclerView.getAdapter().notifyItemRangeRemoved(listposition+1,
+                                num_removed);
+
+                        Log.i(TAG, "Collapsed view from: " + (listposition+1) + " entries: " +
+                                (num_removed));
+
+                        textViewPlaceholder.setTag(collapsed);
+                        textViewPlaceholder.setCompoundDrawablesWithIntrinsicBounds(
+                                R.drawable.arrow_right_48px, 0, 0, 0);
+                    } else {
+                        Log.i(TAG, "Expand view: " + listposition);
+
+                        String searchString = editSearchText.getText().toString();
+                        if (! editSearchText.isFocused() ||
+                                searchString.isEmpty()) {
+                            searchString = "";
+                        }
+
+                        int num_added = mBoundService.expand_group(listposition, searchString);
+                        recyclerView.getAdapter().notifyItemRangeInserted(listposition+1,
+                                num_added);
+
+                        Log.i(TAG, "Expanded view from: " + (listposition+1) + " entries: " +
+                                (num_added));
+
+                        textViewPlaceholder.setTag(expanded);
+                        textViewPlaceholder.setCompoundDrawablesWithIntrinsicBounds(
+                                R.drawable.arrow_down_48px, 0, 0, 0);
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    Log.i(TAG, "Out of bounds: " + listposition);
+                }
+
+                return;
+            }
 
             /** Toggle big text and un-expanded text on card click */
             if(textViewNtfcns.getVisibility() == View.GONE) {
@@ -618,7 +680,6 @@ public class MainActivity extends AppCompatActivity
                  * filter current view based on search results
                  */
                 String searchString = "";
-                final EditText editSearchText = findViewById(R.id.editSearchText);
                 if (editSearchText != null &&
                         editSearchText.isFocused()) {
                     searchString = editSearchText.getText().toString();
@@ -643,7 +704,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Void aVoid) {
             try {
-                int num_active = mBoundService.getAdapter().getItemCount();
+                int num_active = mBoundService.getAdapter().getItemCount() - 1;
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
                 if (num_active > 99)

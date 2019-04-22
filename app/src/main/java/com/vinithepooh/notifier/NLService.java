@@ -309,26 +309,168 @@ public class NLService extends NotificationListenerService {
 
     public void filter_active() {
         ArrayList active = ntfcn_items.filter_active("");
+
+        /** Add a group header */
+        active.add(0, new NtfcnsDataModel(
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
         adapter = new Ntfcns_adapter(active);
     }
 
     public void filter_all() {
         ArrayList all = ntfcn_items.filter_active("");
-        all.addAll(ntfcn_items.filter_inactive(""));
+
+        /** Add a group header */
+        all.add(0, new NtfcnsDataModel(
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
+        ArrayList inactive = ntfcn_items.filter_inactive("");
+
+        /** Add a group header */
+        inactive.add(0, new NtfcnsDataModel(
+                "Past Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
+        all.addAll(inactive);
         adapter = new Ntfcns_adapter(all);
     }
 
 
     public void filter_active(String searchKey) {
         ArrayList active = ntfcn_items.filter_active(searchKey);
+
+        /** Add a group header */
+        active.add(0, new NtfcnsDataModel(
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
         adapter = new Ntfcns_adapter(active);
     }
 
     public void filter_all(String searchKey) {
         ArrayList all = ntfcn_items.filter_active(searchKey);
-        all.addAll(ntfcn_items.filter_inactive(searchKey));
+        /** Add a group header */
+        all.add(0, new NtfcnsDataModel(
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
 
+        ArrayList inactive = ntfcn_items.filter_inactive(searchKey);
+        /** Add a group header */
+        inactive.add(0, new NtfcnsDataModel(
+                "Past Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
+        all.addAll(inactive);
         adapter = new Ntfcns_adapter(all);
+    }
+
+
+    /** remove all items from [startposition] in adapter
+     * as long as they have the same group headers
+     */
+    public int collapse_group(int startposition) {
+        ArrayList<NtfcnsDataModel> data = ((Ntfcns_adapter)adapter).getDataSet();
+        int i = startposition+1;
+        String group_header = data.get(startposition).getPlaceholder();
+
+        Log.i(TAG, "Collapse group: " + group_header);
+
+        /** when 'index' i is removed, next item to remove replaces
+         *  index i.
+         *  keep removing index i until we no longer find a match or
+         *  if i < data.size() at which point we have reached the end of the list
+         */
+        int num_removed = 0;
+        while (i < data.size() &&
+                data.get(i).getPlaceholder().equals(group_header)) {
+            data.remove(i);
+            num_removed ++;
+        }
+
+        return num_removed;
+    }
+
+
+    /** Add (previously removed + new items that arrived later)to the
+     *  arraylist if it matches group header at startposition
+     *
+     *  TODO: What about search view, what about app views?!
+     */
+    public int expand_group(int startposition,
+                             String searchKey) {
+        ArrayList<NtfcnsDataModel> data = ((Ntfcns_adapter)adapter).getDataSet();
+        ArrayList<NtfcnsDataModel> items_to_add = new ArrayList<>();
+
+        String group_header = data.get(startposition).getPlaceholder();
+
+        Log.i(TAG, "Expand group: " + group_header);
+        Log.i(TAG, "Current search key: " + searchKey);
+
+        if (group_header.contains("Active Notifications")) {
+            items_to_add = ntfcn_items.filter_active(searchKey);
+        } else if (group_header.contains("Past Notifications")) {
+            items_to_add = ntfcn_items.filter_inactive(searchKey);
+        }
+
+        data.addAll(startposition+1, items_to_add);
+
+        return items_to_add.size();
     }
 
 

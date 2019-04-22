@@ -149,6 +149,7 @@ public class NtfcnsData {
         ArrayList<NtfcnsDataModel> data = new ArrayList<>();
         PackageManager pm = context.getPackageManager();
 
+
         for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
             String key = entry.getKey();
 
@@ -202,6 +203,7 @@ public class NtfcnsData {
         }
 
         Collections.sort(data, comparator);
+
         return data;
     }
 

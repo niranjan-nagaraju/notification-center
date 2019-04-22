@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.w3c.dom.Text;
@@ -29,7 +30,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
     public static class NViewHolder extends RecyclerView.ViewHolder {
 
         TextView textViewPlaceholder;
-        View separator;
+        LinearLayout top_card_layout;
+        LinearLayout group_card_layout;
 
         ImageView imageViewAppIcon;
         TextView textViewApp;
@@ -47,7 +49,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         public NViewHolder(View itemView) {
             super(itemView);
             this.textViewPlaceholder = (TextView) itemView.findViewById(R.id.textViewPlaceholder);
-            this.separator = (View) itemView.findViewById(R.id.viewSeparator);
+            this.top_card_layout = itemView.findViewById(R.id.top_card_layout);
+            this.group_card_layout = itemView.findViewById(R.id.group_card_layout);
 
             this.imageViewAppIcon = (ImageView)  itemView.findViewById(R.id.imageViewAppIcon);
             this.textViewApp = (TextView) itemView.findViewById(R.id.textViewAppName);
@@ -79,10 +82,12 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         return myViewHolder;
     }
 
+
     @Override
     public void onBindViewHolder(NViewHolder holder, final int listPosition) {
-        View separator = holder.separator;
         TextView textViewPlaceholder = holder.textViewPlaceholder;
+        LinearLayout top_card_layout = holder.top_card_layout;
+        LinearLayout group_card_layout = holder.group_card_layout;
 
         ImageView imageViewAppIcon = holder.imageViewAppIcon;
         TextView textViewApp = holder.textViewApp;
@@ -97,6 +102,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
+
         /**
          * NOTE: onclick listener has been set from main activity
          * This is now redundant
@@ -111,19 +117,24 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         });
          */
 
-        //separator.setBackgroundColor(Color.RED);
-        // show separator and date only for card #0
+
         // or when placeholder text has changed from the last card
         textViewPlaceholder.setText(dataSet.get(listPosition).getPlaceholder());
         if (listPosition == 0 ||
                 (!dataSet.get(listPosition).getPlaceholder().equals(
                         dataSet.get(listPosition-1).getPlaceholder()))
                 ) {
-            separator.setVisibility(View.VISIBLE);
-            textViewPlaceholder.setVisibility(View.VISIBLE);
+            group_card_layout.setVisibility(View.VISIBLE);
+            top_card_layout.setVisibility(View.GONE);
+
+            holder.card_view.setCardElevation(0);
+            holder.card_view.setContentPadding(0,0,0,0);
+            holder.card_view.setRadius(0);
+
+            return;
         } else {
-            separator.setVisibility(View.GONE);
-            textViewPlaceholder.setVisibility(View.GONE);
+            group_card_layout.setVisibility(View.GONE);
+            top_card_layout.setVisibility(View.VISIBLE);
         }
 
         if (dataSet.get(listPosition).getAppIcon() != null)
@@ -193,5 +204,9 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
     @Override
     public int getItemCount() {
         return dataSet.size();
+    }
+
+    public ArrayList<NtfcnsDataModel> getDataSet() {
+        return this.dataSet;
     }
 }
