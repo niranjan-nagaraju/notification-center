@@ -187,6 +187,20 @@ public class NtfcnsData {
                 app_icon = null;
             }
 
+            Drawable big_icon = null;
+            try {
+                if (sbn.getNotification().getLargeIcon() != null)
+                    big_icon = sbn.getNotification().getLargeIcon().loadDrawable(context);
+                else
+                    Log.i(TAG, "No large icon for" + sbn.getNotification().tickerText);
+            } catch(Exception e) {
+                Log.e(TAG, "Error occurred getting large icon - using null: " +
+                        e.getMessage());
+                big_icon = null;
+            }
+
+            Drawable big_picture = null;
+
 
             data.add(new NtfcnsDataModel(
                     (active ? "Active Notifications" : "Past Notifications"),
@@ -197,7 +211,7 @@ public class NtfcnsData {
                     "" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE),
                     "" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT),
                     "" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT),
-                    /** sbn.getNotification().getLargeIcon().loadDrawable(context) */ null,
+                    big_icon,
                     null
             ));
         }

@@ -127,14 +127,20 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             group_card_layout.setVisibility(View.VISIBLE);
             top_card_layout.setVisibility(View.GONE);
 
+            /** No shadows and padding for group header */
             holder.card_view.setCardElevation(0);
             holder.card_view.setContentPadding(0,0,0,0);
-            holder.card_view.setRadius(0);
-
             return;
         } else {
             group_card_layout.setVisibility(View.GONE);
             top_card_layout.setVisibility(View.VISIBLE);
+            float density =
+                    holder.card_view.getContext().getResources().getDisplayMetrics().density;
+
+            /** restore normal card parameters for regular notification cards */
+            holder.card_view.setCardElevation( 2 * density);
+            holder.card_view.setContentPadding((int)(10*density), (int)(10*density),
+                    (int)(10*density), (int)(10*density));
         }
 
         if (dataSet.get(listPosition).getAppIcon() != null)
@@ -167,9 +173,17 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         if (dataSet.get(listPosition).getLargeIcon() != null) {
             imageViewLargeIcon.setImageDrawable(dataSet.get(listPosition).getLargeIcon());
             imageViewLargeIcon.setVisibility(View.VISIBLE);
+        } else {
+            imageViewLargeIcon.setImageResource(0);
+            imageViewLargeIcon.setVisibility(View.GONE);
         }
+
         if (dataSet.get(listPosition).getNtfcn_bigpicture() != null) {
             imageViewBigPicture.setImageDrawable(dataSet.get(listPosition).getNtfcn_bigpicture());
+            imageViewBigPicture.setVisibility(View.VISIBLE);
+        } else {
+            imageViewBigPicture.setImageResource(0);
+            imageViewBigPicture.setVisibility(View.GONE);
         }
 
         textViewNtfcns.setOnClickListener(new View.OnClickListener() {

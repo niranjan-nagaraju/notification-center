@@ -248,10 +248,12 @@ public class NLService extends NotificationListenerService {
                  */
                 addActiveSBN(sbn);
 
-                /**
+
                 Log.i(TAG, "Template :" +
                         sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE) + "\n");
 
+                Log.i(TAG, "CLass: " + Notification.BigTextStyle.class.toString());
+                /**
 
                 if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE).equals(
                         "android.app.Notification$MessagingStyle")
