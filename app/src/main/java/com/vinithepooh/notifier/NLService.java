@@ -248,11 +248,6 @@ public class NLService extends NotificationListenerService {
                  */
                 addActiveSBN(sbn);
 
-
-                Log.i(TAG, "Template :" +
-                        sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE) + "\n");
-
-                Log.i(TAG, "CLass: " + Notification.BigTextStyle.class.toString());
                 /**
 
                 if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE).equals(
@@ -302,7 +297,7 @@ public class NLService extends NotificationListenerService {
                     }
                  */
             } catch(Exception e) {
-                Log.e(TAG, "Exception occurred while printing notifications: " + e.getMessage());
+                Log.e(TAG, "Exception occurred while syncing notifications: " + e.getMessage());
             }
         }
     }

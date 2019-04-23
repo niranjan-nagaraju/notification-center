@@ -1,5 +1,6 @@
 package com.vinithepooh.notifier;
 
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 
@@ -19,13 +20,13 @@ public class NtfcnsDataModel {
     String ntfcn_contents;
     String ntfcn_bigtext;
     Drawable largeIcon;
-    Drawable ntfcn_bigpicture;
+    Bitmap ntfcn_bigpicture;
 
 
     public NtfcnsDataModel(String placeholder,
                            Drawable appIcon, String app_name, String subtext, long postTime,
                            String ntfcn_title, String ntfcn_contents, String ntfcn_bigtext,
-                           Drawable largeIcon, Drawable ntfcn_bigpicture) {
+                           Drawable largeIcon, Bitmap ntfcn_bigpicture) {
         this.placeholder = placeholder;
         this.appIcon = appIcon;
         this.app_name = app_name;
@@ -76,7 +77,7 @@ public class NtfcnsDataModel {
         return largeIcon;
     }
 
-    public Drawable getNtfcn_bigpicture() {
+    public Bitmap getNtfcn_bigpicture() {
         return ntfcn_bigpicture;
     }
 }

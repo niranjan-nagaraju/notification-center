@@ -143,32 +143,39 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                     (int)(10*density), (int)(10*density));
         }
 
-        if (dataSet.get(listPosition).getAppIcon() != null)
+        if (dataSet.get(listPosition).getAppIcon() != null) {
             imageViewAppIcon.setImageDrawable(dataSet.get(listPosition).getAppIcon());
+        } else {
+            imageViewBigPicture.setImageResource(0);
+        }
 
         textViewApp.setText(dataSet.get(listPosition).getApp_name());
 
-        if (dataSet.get(listPosition).getSubtext() != null)
+        if (!dataSet.get(listPosition).getSubtext().isEmpty()) {
             textViewSubText.setText(dataSet.get(listPosition).getSubtext());
-        else
-            textViewSubText.setVisibility(View.INVISIBLE);
+        } else {
+            /** Reserve space at the center for alignment sake even if subtext is empty */
+            textViewSubText.setText("");
+        }
 
         textViewPostTime.setText(
                 DateUtils.getRelativeTimeSpanString(dataSet.get(listPosition).getPostTime()));
 
         textViewNtfcnsTitle.setText(dataSet.get(listPosition).getNtfcn_title());
 
-        if (dataSet.get(listPosition).getNtfcn_contents() != null)
+        if (!dataSet.get(listPosition).getNtfcn_contents().isEmpty()) {
             textViewNtfcns.setText(dataSet.get(listPosition).getNtfcn_contents());
-        else
-            textViewNtfcns.setVisibility(View.INVISIBLE);
+        } else {
+            textViewNtfcns.setText("");
+        }
 
 
-        if (dataSet.get(listPosition).getNtfcn_bigtext() != null)
+        if (!dataSet.get(listPosition).getNtfcn_bigtext().isEmpty()) {
             textViewNtfcnsBigText.setText(dataSet.get(listPosition).getNtfcn_bigtext());
-        else
-            textViewNtfcnsBigText.setVisibility(View.INVISIBLE);
-
+        } else {
+            /** Set 'big text' to same as text if this notification doesnt have big text content */
+            textViewNtfcnsBigText.setText(dataSet.get(listPosition).getNtfcn_contents());
+        }
 
         if (dataSet.get(listPosition).getLargeIcon() != null) {
             imageViewLargeIcon.setImageDrawable(dataSet.get(listPosition).getLargeIcon());
@@ -179,8 +186,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         }
 
         if (dataSet.get(listPosition).getNtfcn_bigpicture() != null) {
-            imageViewBigPicture.setImageDrawable(dataSet.get(listPosition).getNtfcn_bigpicture());
-            imageViewBigPicture.setVisibility(View.VISIBLE);
+            imageViewBigPicture.setImageBitmap(dataSet.get(listPosition).getNtfcn_bigpicture());
         } else {
             imageViewBigPicture.setImageResource(0);
             imageViewBigPicture.setVisibility(View.GONE);
@@ -191,10 +197,13 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             public void onClick(View v) {
                 /**
                  * Toggle short text visibility to big text
-                 * and expanded text on card click
+                 * (but only if the notification has 'big text'
+                 * also expand big picture (if exists) on card click
                  */
-                textViewNtfcnsBigText.setVisibility(View.VISIBLE);
-                textViewNtfcns.setVisibility(View.GONE);
+                if (!textViewNtfcnsBigText.getText().toString().isEmpty()) {
+                    textViewNtfcnsBigText.setVisibility(View.VISIBLE);
+                    textViewNtfcns.setVisibility(View.GONE);
+                }
                 if(imageViewBigPicture.getDrawable() != null) {
                     imageViewBigPicture.setVisibility(View.VISIBLE);
                 }
