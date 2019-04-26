@@ -165,6 +165,7 @@
                     android:id="@+id/imageViewntfcn_icon"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
+                    android:layout_marginLeft="5dp"
                     android:layout_gravity="center_horizontal|center_vertical"
                     android:layout_weight="0.1"
                     android:visibility="gone" />

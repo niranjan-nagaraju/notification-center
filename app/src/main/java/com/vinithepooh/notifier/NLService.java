@@ -193,7 +193,7 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
-        addActiveSBN(sbn);
+        addActiveSBN(sbn.clone());
     }
 
     @Override
@@ -225,8 +225,8 @@ public class NLService extends NotificationListenerService {
          */
         ntfcn_items.markAllInactive();
 
-        for (StatusBarNotification sbn : getActiveNotifications()) {
-            //StatusBarNotification asbn = sbn.clone();
+        for (StatusBarNotification asbn : getActiveNotifications()) {
+            StatusBarNotification sbn = asbn.clone();
             String condensed_string = ntfcn_items.getCondensedString(sbn);
 
             Log.i(TAG,"Condensed string: " + condensed_string);

@@ -178,7 +178,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         }
 
         if (dataSet.get(listPosition).getLargeIcon() != null) {
-            imageViewLargeIcon.setImageDrawable(dataSet.get(listPosition).getLargeIcon());
+            //imageViewLargeIcon.setImageDrawable(dataSet.get(listPosition).getLargeIcon());
+            imageViewLargeIcon.setImageBitmap(dataSet.get(listPosition).getLargeIcon());
             imageViewLargeIcon.setVisibility(View.VISIBLE);
         } else {
             imageViewLargeIcon.setImageResource(0);

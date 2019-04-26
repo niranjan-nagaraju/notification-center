@@ -33,7 +33,7 @@ public class NtfcnsData {
         String bigtext = null;
 
         Drawable app_icon = null;
-        Drawable big_icon = null;
+        Bitmap big_icon = null;
         Bitmap big_picture = null;
 
 
@@ -45,7 +45,7 @@ public class NtfcnsData {
                              String text,
                              String bigtext,
                              Drawable app_icon,
-                             Drawable big_icon,
+                             Bitmap big_icon,
                              Bitmap big_picture) {
             this.sbn = sbn;
             this.active = active;
@@ -98,7 +98,7 @@ public class NtfcnsData {
             return app_icon;
         }
 
-        public Drawable getBig_icon() {
+        public Bitmap getBig_icon() {
             return big_icon;
         }
 
@@ -233,7 +233,7 @@ public class NtfcnsData {
             String bigtext = entry.getValue().getBigText();
 
             Drawable app_icon = entry.getValue().getApp_icon();
-            Drawable big_icon = entry.getValue().getBig_icon();
+            Bitmap big_icon = entry.getValue().getBig_icon();
             Bitmap big_picture = entry.getValue().getBig_picture();
 
             data.add(new NtfcnsDataModel(
@@ -315,10 +315,15 @@ public class NtfcnsData {
             app_icon = null;
         }
 
-        Drawable big_icon = null;
+        Bitmap big_icon = null;
         try {
-            if (sbn.getNotification().getLargeIcon() != null)
-                big_icon = sbn.getNotification().getLargeIcon().loadDrawable(context);
+            Drawable d;
+            if (sbn.getNotification().getLargeIcon() != null) {
+                d = sbn.getNotification().getLargeIcon().loadDrawable(context);
+                big_icon = ((BitmapDrawable) d).getBitmap();
+            }
+            else
+                Log.e(TAG, "App: " + app_name + "has no large icon");
         } catch(Exception e) {
             Log.e(TAG, "Error occurred getting large icon - using null: " +
                     e.getMessage());
