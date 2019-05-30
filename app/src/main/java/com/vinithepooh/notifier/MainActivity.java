@@ -468,17 +468,26 @@ public class MainActivity extends AppCompatActivity
                 return;
             }
 
+            LinearLayout ntfcns_actions_layout = v.findViewById(R.id.linear_layout_actions);
+
             /** Toggle big text and un-expanded text on card click */
             if(textViewNtfcns.getVisibility() == View.GONE) {
                 textViewNtfcnsBigText.setVisibility(View.GONE);
                 textViewNtfcns.setVisibility(View.VISIBLE);
                 imageViewBigPicture.setVisibility(View.GONE);
+
+                /** Hide actions bar */
+                ntfcns_actions_layout.setVisibility(View.GONE);
+
             } else {
                 textViewNtfcnsBigText.setVisibility(View.VISIBLE);
                 textViewNtfcns.setVisibility(View.GONE);
                 if(imageViewBigPicture.getDrawable() != null) {
                     imageViewBigPicture.setVisibility(View.VISIBLE);
                 }
+
+                /** Show actions bar */
+                ntfcns_actions_layout.setVisibility(View.VISIBLE);
             }
 
             Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),

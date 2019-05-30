@@ -65,8 +65,8 @@
                 xmlns:app="http://schemas.android.com/apk/res-auto"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_marginEnd="5dp"
                 android:layout_marginTop="1dp"
+                android:layout_gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <ImageView
@@ -112,8 +112,102 @@
                     android:textColor="@android:color/black" />
             </LinearLayout>
 
+                <LinearLayout
+                    android:id="@+id/linear_layout_actions"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:orientation="horizontal"
+                    android:layout_gravity="center_vertical"
+                    android:background="@color/cardview_shadow_start_color"
+                    android:layout_marginBottom="5dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginLeft="2dp"
+                    android:layout_marginRight="2dp"
+                    android:visibility="gone"
+                    >
+
+                    <TextView
+                        android:id="@+id/ntfcn_action1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="Action1"
+                        android:layout_weight="0.1"
+                        android:textAllCaps="true"
+                        android:textAlignment="viewStart"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:padding="5dp"
+                        android:visibility="visible"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/ntfcn_action2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="Action2"
+                        android:layout_weight="0.1"
+                        android:textAllCaps="true"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:padding="5dp"
+                        android:visibility="visible"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/ntfcn_action3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="Action3"
+                        android:layout_weight="0.1"
+                        android:textAllCaps="true"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:padding="5dp"
+                        android:visibility="visible"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/ntfcn_action4"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="Action4"
+                        android:layout_weight="0.1"
+                        android:textAllCaps="true"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:padding="5dp"
+                        android:visibility="visible"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/ntfcn_action5"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="Action5"
+                        android:layout_weight="0.1"
+                        android:textAllCaps="true"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:padding="5dp"
+                        android:visibility="visible"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/ntfcn_open_action"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="OPEN"
+                        android:layout_weight="0.1"
+                        android:textAllCaps="true"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:padding="5dp"
+                        android:visibility="visible"
+                        android:textStyle="bold" />
+                </LinearLayout>
             <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/linear_layout_ntfcn"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="horizontal">
@@ -171,7 +265,6 @@
                     android:visibility="gone" />
             </LinearLayout>
 
-
             <ImageView
                 android:id="@+id/imageViewBigPicture"
                 android:layout_width="match_parent"
@@ -180,6 +273,19 @@
                 android:layout_marginEnd="5dp"
                 android:layout_marginTop="2dp"
                 android:visibility="gone" />
+
+
+            <EditText
+                android:id="@+id/editTextRemoteInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:cursorVisible="true"
+                android:ems="10"
+                android:hint="Type your message here..."
+                android:imeOptions="actionGo"
+                android:inputType="text"
+                android:visibility="gone"
+                tools:singleLine="true" />
         </LinearLayout>
     </LinearLayout>
 </android.support.v7.widget.CardView>

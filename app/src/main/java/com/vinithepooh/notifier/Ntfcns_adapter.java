@@ -46,6 +46,14 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
         CardView card_view;
 
+        LinearLayout ntfcns_actions_layout;
+        TextView ntfcn_action1;
+        TextView ntfcn_action2;
+        TextView ntfcn_action3;
+        TextView ntfcn_action4;
+        TextView ntfcn_action5;
+        TextView ntfcn_open_action;
+
         public NViewHolder(View itemView) {
             super(itemView);
             this.textViewPlaceholder = (TextView) itemView.findViewById(R.id.textViewPlaceholder);
@@ -64,6 +72,15 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             this.imageViewBigPicture = (ImageView) itemView.findViewById(R.id.imageViewBigPicture);
 
             this.card_view = (CardView) itemView.findViewById(R.id.card_view);
+
+            this.ntfcns_actions_layout = itemView.findViewById(R.id.linear_layout_actions);
+            this.ntfcn_open_action = itemView.findViewById(R.id.ntfcn_open_action);
+
+            this.ntfcn_action1 = itemView.findViewById(R.id.ntfcn_action1);
+            this.ntfcn_action2 = itemView.findViewById(R.id.ntfcn_action2);
+            this.ntfcn_action3 = itemView.findViewById(R.id.ntfcn_action3);
+            this.ntfcn_action4 = itemView.findViewById(R.id.ntfcn_action4);
+            this.ntfcn_action5 = itemView.findViewById(R.id.ntfcn_action5);
         }
     }
 
@@ -100,6 +117,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         ImageView imageViewLargeIcon = holder.imageViewLargeIcon;
         final ImageView imageViewBigPicture = holder.imageViewBigPicture;
 
+
+        final LinearLayout ntfcns_action_lyt = holder.ntfcns_actions_layout;
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
 
@@ -193,6 +212,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             imageViewBigPicture.setVisibility(View.GONE);
         }
 
+
         textViewNtfcns.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -208,6 +228,10 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                 if(imageViewBigPicture.getDrawable() != null) {
                     imageViewBigPicture.setVisibility(View.VISIBLE);
                 }
+
+                /** Show actions bar */
+                ntfcns_action_lyt.setVisibility(View.VISIBLE);
+
             }
         });
 
@@ -221,6 +245,9 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                 textViewNtfcnsBigText.setVisibility(View.GONE);
                 textViewNtfcns.setVisibility(View.VISIBLE);
                 imageViewBigPicture.setVisibility(View.GONE);
+
+                /** Hide actions bar */
+                ntfcns_action_lyt.setVisibility(View.GONE);
             }
         });
     }
