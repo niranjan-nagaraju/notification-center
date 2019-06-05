@@ -157,7 +157,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                     holder.card_view.getContext().getResources().getDisplayMetrics().density;
 
             /** restore normal card parameters for regular notification cards */
-            holder.card_view.setCardElevation( 2 * density);
+            holder.card_view.setCardElevation( 5 * density);
             holder.card_view.setContentPadding((int)(10*density), (int)(10*density),
                     (int)(10*density), (int)(10*density));
         }
