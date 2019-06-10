@@ -1,8 +1,13 @@
 package com.vinithepooh.notifier;
 
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.service.notification.StatusBarNotification;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
@@ -26,6 +31,7 @@ import java.util.ArrayList;
 
 public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHolder>{
     private ArrayList<NtfcnsDataModel> dataSet;
+    final static int max_actions = 5;
 
     public static class NViewHolder extends RecyclerView.ViewHolder {
 
@@ -47,11 +53,14 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         CardView card_view;
 
         LinearLayout ntfcns_actions_layout;
-        TextView ntfcn_action1;
+        TextView[] ntfcn_action = new TextView[max_actions];
+
+        /**
         TextView ntfcn_action2;
         TextView ntfcn_action3;
         TextView ntfcn_action4;
         TextView ntfcn_action5;
+         */
         TextView ntfcn_open_action;
 
         public NViewHolder(View itemView) {
@@ -76,11 +85,11 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             this.ntfcns_actions_layout = itemView.findViewById(R.id.linear_layout_actions);
             this.ntfcn_open_action = itemView.findViewById(R.id.ntfcn_open_action);
 
-            this.ntfcn_action1 = itemView.findViewById(R.id.ntfcn_action1);
-            this.ntfcn_action2 = itemView.findViewById(R.id.ntfcn_action2);
-            this.ntfcn_action3 = itemView.findViewById(R.id.ntfcn_action3);
-            this.ntfcn_action4 = itemView.findViewById(R.id.ntfcn_action4);
-            this.ntfcn_action5 = itemView.findViewById(R.id.ntfcn_action5);
+            this.ntfcn_action[0] = itemView.findViewById(R.id.ntfcn_action1);
+            this.ntfcn_action[1] = itemView.findViewById(R.id.ntfcn_action2);
+            this.ntfcn_action[2] = itemView.findViewById(R.id.ntfcn_action3);
+            this.ntfcn_action[3] = itemView.findViewById(R.id.ntfcn_action4);
+            this.ntfcn_action[4] = itemView.findViewById(R.id.ntfcn_action5);
         }
     }
 
@@ -119,6 +128,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
 
         final LinearLayout ntfcns_action_lyt = holder.ntfcns_actions_layout;
+        TextView[] ntfcn_action = holder.ntfcn_action;
+        TextView ntfcn_open_action = holder.ntfcn_open_action;
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
 
@@ -212,6 +223,57 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             imageViewBigPicture.setVisibility(View.GONE);
         }
 
+        /** Fill notification actions */
+        StatusBarNotification sbn = dataSet.get(listPosition).getSbn();
+
+        for (int i=0; i<max_actions; i++) {
+            ntfcn_action[i].setText("");
+            ntfcn_action[i].setVisibility(View.GONE);
+        }
+
+        try {
+            final Notification ntfcn = sbn.getNotification();
+            for (int i =0; i < NotificationCompat.getActionCount(ntfcn); i++) {
+                final NotificationCompat.Action action = NotificationCompat.getAction(ntfcn, i);
+
+                ntfcn_action[i].setText(action.title);
+                ntfcn_action[i].setVisibility(View.VISIBLE);
+
+                //Log.i("bulletin_board_adapter",
+                //        "Semantic Action of " + action.title + " : " + action.);
+                ntfcn_action[i].setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent();
+
+                        try {
+                            action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
+                        } catch (PendingIntent.CanceledException e) {
+                            Log.e("bulletin_board_adapter", "Exception executing action: " +
+                                    e.getMessage());
+                        }
+                    }
+                });
+            }
+
+            ntfcn_open_action.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent();
+
+                    try {
+                        ntfcn.contentIntent.send(v.getContext().getApplicationContext(), 0, intent);
+                    } catch (PendingIntent.CanceledException e) {
+                        Log.e("bulletin_board_adapter", "Exception executing open action: " +
+                                e.getMessage());
+                    }
+                }
+            });
+
+
+        } catch (Exception e) {
+            Log.e("bulletin_board_adapter", "Exception occurred while getting actions");
+        }
 
         textViewNtfcns.setOnClickListener(new View.OnClickListener() {
             @Override

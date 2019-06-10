@@ -309,6 +309,7 @@ public class NLService extends NotificationListenerService {
 
         /** Add a group header */
         active.add(0, new NtfcnsDataModel(
+                null,
                 "Active Notifications",
                 null,
                 null,
@@ -329,6 +330,7 @@ public class NLService extends NotificationListenerService {
 
         /** Add a group header */
         all.add(0, new NtfcnsDataModel(
+                null,
                 "Active Notifications",
                 null,
                 null,
@@ -345,6 +347,7 @@ public class NLService extends NotificationListenerService {
 
         /** Add a group header */
         inactive.add(0, new NtfcnsDataModel(
+                null,
                 "Past Notifications",
                 null,
                 null,
@@ -367,6 +370,7 @@ public class NLService extends NotificationListenerService {
 
         /** Add a group header */
         active.add(0, new NtfcnsDataModel(
+                null,
                 "Active Notifications",
                 null,
                 null,
@@ -386,6 +390,7 @@ public class NLService extends NotificationListenerService {
         ArrayList all = ntfcn_items.filter_active(searchKey);
         /** Add a group header */
         all.add(0, new NtfcnsDataModel(
+                null,
                 "Active Notifications",
                 null,
                 null,
@@ -401,6 +406,7 @@ public class NLService extends NotificationListenerService {
         ArrayList inactive = ntfcn_items.filter_inactive(searchKey);
         /** Add a group header */
         inactive.add(0, new NtfcnsDataModel(
+                null,
                 "Past Notifications",
                 null,
                 null,

@@ -237,6 +237,7 @@ public class NtfcnsData {
             Bitmap big_picture = entry.getValue().getBig_picture();
 
             data.add(new NtfcnsDataModel(
+                    sbn,
                     (active ? "Active Notifications" : "Past Notifications"),
                     app_icon,
                     app_name,
