@@ -278,9 +278,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:cursorVisible="true"
+                android:background="@color/cardview_shadow_start_color"
                 android:ems="10"
                 android:hint="Type your message here..."
                 android:imeOptions="actionGo"
+                android:drawableRight="@drawable/arrow_right_48px"
+                android:drawableTint="@color/cardview_shadow_start_color"
                 android:inputType="text"
                 android:visibility="gone"
                 tools:singleLine="true" />

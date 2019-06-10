@@ -490,9 +490,11 @@ public class MainActivity extends AppCompatActivity
                 ntfcns_actions_layout.setVisibility(View.VISIBLE);
             }
 
+            /**
             Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),
                     Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
+             */
         }
 
         /**

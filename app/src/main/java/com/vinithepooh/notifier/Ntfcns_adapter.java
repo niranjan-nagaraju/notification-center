@@ -2,25 +2,26 @@ package com.vinithepooh.notifier;
 
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.RemoteInput;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
-import android.text.util.Linkify;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 
@@ -54,6 +55,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
         LinearLayout ntfcns_actions_layout;
         TextView[] ntfcn_action = new TextView[max_actions];
+        EditText editTextRemoteInput;
 
         /**
         TextView ntfcn_action2;
@@ -90,6 +92,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             this.ntfcn_action[2] = itemView.findViewById(R.id.ntfcn_action3);
             this.ntfcn_action[3] = itemView.findViewById(R.id.ntfcn_action4);
             this.ntfcn_action[4] = itemView.findViewById(R.id.ntfcn_action5);
+
+            this.editTextRemoteInput = itemView.findViewById(R.id.editTextRemoteInput);
         }
     }
 
@@ -130,6 +134,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         final LinearLayout ntfcns_action_lyt = holder.ntfcns_actions_layout;
         TextView[] ntfcn_action = holder.ntfcn_action;
         TextView ntfcn_open_action = holder.ntfcn_open_action;
+        final EditText editTextRemoteInput = holder.editTextRemoteInput;
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
 
@@ -233,27 +238,104 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
         try {
             final Notification ntfcn = sbn.getNotification();
+
             for (int i =0; i < NotificationCompat.getActionCount(ntfcn); i++) {
                 final NotificationCompat.Action action = NotificationCompat.getAction(ntfcn, i);
 
                 ntfcn_action[i].setText(action.title);
                 ntfcn_action[i].setVisibility(View.VISIBLE);
 
-                //Log.i("bulletin_board_adapter",
-                //        "Semantic Action of " + action.title + " : " + action.);
-                ntfcn_action[i].setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent intent = new Intent();
+                final RemoteInput[] ris = action.getRemoteInputs();
+                boolean remote_found = false;
+                if (ris != null) {
+                    for (RemoteInput ri : ris) {
+                        Log.i("bulletin_board_adapter",
+                                dataSet.get(listPosition).getApp_name() +
+                                        ": Remote input found for action: " + action.title + " key: " +
+                                        ri.getResultKey());
 
-                        try {
-                            action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
-                        } catch (PendingIntent.CanceledException e) {
-                            Log.e("bulletin_board_adapter", "Exception executing action: " +
-                                    e.getMessage());
-                        }
+                        remote_found = true;
                     }
-                });
+                }
+
+                if (remote_found) {
+                    /** Enable remote input textbox on click */
+                    ntfcn_action[i].setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            // show remote input keyboard
+                            editTextRemoteInput.setVisibility(View.VISIBLE);
+                        }
+                    });
+
+                    /** Get remote input textbox contents and submit contents to
+                     *  a remote input handler
+                     */
+                    editTextRemoteInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                        @Override
+                        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                            Log.i("bulletin_board_adapter", "remote submitted");
+                            if (actionId == EditorInfo.IME_ACTION_GO) {
+                                try {
+                                    String inputString = editTextRemoteInput.getText().toString();
+
+                                    editTextRemoteInput.clearFocus();
+                                    editTextRemoteInput.setVisibility(View.GONE);
+                                    Log.i("bulletin_board_adapter", "Remote input: " +
+                                            editTextRemoteInput.getText());
+
+                                    /** clear text for future  */
+                                    editTextRemoteInput.setText("");
+
+                                    // hide keyboard
+                                    InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+
+
+                                    Intent intent = new Intent();
+                                    Bundle bundle = new Bundle();
+
+                                    ArrayList<RemoteInput> actualInputs = new ArrayList<>();
+
+                                    for (RemoteInput ri : ris) {
+                                        Log.i("bulletin_board_adapter", "RemoteInput: " + ri.getLabel());
+                                        bundle.putCharSequence(ri.getResultKey(), inputString);
+                                        RemoteInput.Builder builder = new RemoteInput.Builder(ri.getResultKey());
+                                        builder.setLabel(ri.getLabel());
+                                        builder.setChoices(ri.getChoices());
+                                        builder.setAllowFreeFormInput(ri.getAllowFreeFormInput());
+                                        builder.addExtras(ri.getExtras());
+                                        actualInputs.add(builder.build());
+                                    }
+
+                                    RemoteInput[] inputs = actualInputs.toArray(new RemoteInput[actualInputs.size()]);
+                                    RemoteInput.addResultsToIntent(inputs, intent, bundle);
+                                    action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
+                                } catch (Exception e) {
+                                    Log.e("bulletin_board_adapter", "Error in remote input: " +
+                                            e.getMessage());
+                                }
+                                return true;
+                            }
+                            return false;
+                        }
+                    });
+                } else {
+
+                    ntfcn_action[i].setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Intent intent = new Intent();
+
+                            try {
+                                action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
+                            } catch (PendingIntent.CanceledException e) {
+                                Log.e("bulletin_board_adapter", "Exception executing action: " +
+                                        e.getMessage());
+                            }
+                        }
+                    });
+                }
             }
 
             ntfcn_open_action.setOnClickListener(new View.OnClickListener() {
@@ -272,7 +354,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
 
         } catch (Exception e) {
-            Log.e("bulletin_board_adapter", "Exception occurred while getting actions");
+            Log.e("bulletin_board_adapter", "Exception occurred while getting actions" +
+                    e.getMessage());
         }
 
         textViewNtfcns.setOnClickListener(new View.OnClickListener() {
