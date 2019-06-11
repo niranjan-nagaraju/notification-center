@@ -148,6 +148,12 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                /** Clear previous search string if the searchbox wasnt visible
+                 * to begin with.
+                 */
+               if (editSearchText.getVisibility() != View.VISIBLE)
+                   editSearchText.setText("");
+
                 /**
                  *  If the search box already has some content
                  *  treat this click as a 'post'/done button.
@@ -479,6 +485,10 @@ public class MainActivity extends AppCompatActivity
                 /** Hide actions bar */
                 ntfcns_actions_layout.setVisibility(View.GONE);
 
+                EditText editTextRemoteInput = v.findViewById(R.id.editTextRemoteInput);
+
+                /** Hide remote text input */
+                editTextRemoteInput.setVisibility(View.GONE);
             } else {
                 textViewNtfcnsBigText.setVisibility(View.VISIBLE);
                 textViewNtfcns.setVisibility(View.GONE);

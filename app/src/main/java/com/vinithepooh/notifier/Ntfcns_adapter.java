@@ -4,16 +4,20 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.RemoteInput;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -265,8 +269,14 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                         public void onClick(View v) {
                             // show remote input keyboard
                             editTextRemoteInput.setVisibility(View.VISIBLE);
+
+                            editTextRemoteInput.requestFocus();
+                            // show keyboard
+                            InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                            imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
                         }
                     });
+
 
                     /** Get remote input textbox contents and submit contents to
                      *  a remote input handler
@@ -274,7 +284,6 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                     editTextRemoteInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                         @Override
                         public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                            Log.i("bulletin_board_adapter", "remote submitted");
                             if (actionId == EditorInfo.IME_ACTION_GO) {
                                 try {
                                     String inputString = editTextRemoteInput.getText().toString();
@@ -291,6 +300,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                     InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
+                                    if (inputString.toString().isEmpty())
+                                        return true;
 
                                     Intent intent = new Intent();
                                     Bundle bundle = new Bundle();
@@ -318,6 +329,86 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                 return true;
                             }
                             return false;
+                        }
+                    });
+
+                    editTextRemoteInput.setOnTouchListener(new View.OnTouchListener() {
+                        @Override
+                        public boolean onTouch(View v, MotionEvent event) {
+                            final int DRAWABLE_RIGHT = 2;
+
+                            if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                                if(event.getRawX() >=
+                                        (editTextRemoteInput.getRight() - editTextRemoteInput.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
+
+                                    try {
+                                        String inputString = editTextRemoteInput.getText().toString();
+
+                                        editTextRemoteInput.clearFocus();
+                                        editTextRemoteInput.setVisibility(View.GONE);
+                                        Log.i("bulletin_board_adapter", "Remote input: " +
+                                                editTextRemoteInput.getText());
+
+                                        /** clear text for future  */
+                                        editTextRemoteInput.setText("");
+
+                                        // hide keyboard
+                                        InputMethodManager imm =
+                                                (InputMethodManager) v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+
+                                        if (inputString.toString().isEmpty())
+                                            return true;
+
+                                        Intent intent = new Intent();
+                                        Bundle bundle = new Bundle();
+
+                                        ArrayList<RemoteInput> actualInputs = new ArrayList<>();
+
+                                        for (RemoteInput ri : ris) {
+                                            bundle.putCharSequence(ri.getResultKey(), inputString);
+                                            RemoteInput.Builder builder = new RemoteInput.Builder(ri.getResultKey());
+                                            builder.setLabel(ri.getLabel());
+                                            builder.setChoices(ri.getChoices());
+                                            builder.setAllowFreeFormInput(ri.getAllowFreeFormInput());
+                                            builder.addExtras(ri.getExtras());
+                                            actualInputs.add(builder.build());
+                                        }
+
+                                        RemoteInput[] inputs = actualInputs.toArray(new RemoteInput[actualInputs.size()]);
+                                        RemoteInput.addResultsToIntent(inputs, intent, bundle);
+                                        action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
+                                    } catch (Exception e) {
+                                        Log.e("bulletin_board_adapter", "Error in remote input: " +
+                                                e.getMessage());
+                                    }
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
+                    });
+
+                    editTextRemoteInput.addTextChangedListener(new TextWatcher() {
+
+                        @Override
+                        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                            PorterDuff.Mode tint = editTextRemoteInput.getBackgroundTintMode();
+                            if (!editTextRemoteInput.getText().toString().isEmpty())
+                                editTextRemoteInput.setCompoundDrawableTintMode(null);
+                            else
+                                editTextRemoteInput.setCompoundDrawableTintMode(tint);
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable editable) {
+                            if (!editTextRemoteInput.getText().toString().isEmpty())
+                                editTextRemoteInput.setCompoundDrawableTintMode(null);
                         }
                     });
                 } else {
@@ -393,6 +484,9 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
                 /** Hide actions bar */
                 ntfcns_action_lyt.setVisibility(View.GONE);
+
+                /** Hide remote text input */
+                editTextRemoteInput.setVisibility(View.GONE);
             }
         });
     }
