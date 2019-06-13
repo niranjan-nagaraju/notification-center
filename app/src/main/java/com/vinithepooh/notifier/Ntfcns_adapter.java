@@ -398,17 +398,40 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
                         @Override
                         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                            PorterDuff.Mode tint = editTextRemoteInput.getBackgroundTintMode();
                             if (!editTextRemoteInput.getText().toString().isEmpty())
                                 editTextRemoteInput.setCompoundDrawableTintMode(null);
                             else
-                                editTextRemoteInput.setCompoundDrawableTintMode(tint);
+                                editTextRemoteInput.setCompoundDrawableTintMode(PorterDuff.Mode.SRC_IN);
                         }
 
                         @Override
                         public void afterTextChanged(Editable editable) {
                             if (!editTextRemoteInput.getText().toString().isEmpty())
                                 editTextRemoteInput.setCompoundDrawableTintMode(null);
+                            else
+                                editTextRemoteInput.setCompoundDrawableTintMode(PorterDuff.Mode.SRC_IN);
+                        }
+                    });
+
+
+                    editTextRemoteInput.setOnKeyListener(new View.OnKeyListener() {
+                        @Override
+                        public boolean onKey(View v, int keyCode, KeyEvent event) {
+                            /**
+                             * back key pressed with remote input box in focus
+                             * just makes sure the app isn't closed
+                             * on back press.
+                             */
+                            if (keyCode == KeyEvent.KEYCODE_BACK) {
+                                if (!editTextRemoteInput.getText().toString().isEmpty()) {
+                                    editTextRemoteInput.clearFocus();
+                                    editTextRemoteInput.setText("");
+
+                                    return true;
+                                }
+                            }
+
+                            return false;
                         }
                     });
                 } else {
