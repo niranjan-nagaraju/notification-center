@@ -1,5 +1,9 @@
 package com.vinithepooh.notifier;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -7,11 +11,14 @@ import android.content.ServiceConnection;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -35,6 +42,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,7 +61,7 @@ public class MainActivity extends AppCompatActivity
 
     // app names to menuitem references mapping
     private HashMap<String, MenuItem> app_menus;
-    private NLService mBoundService;
+    private static NLService mBoundService;
     private boolean mIsBound;
 
     private static RecyclerView recyclerView;
@@ -63,7 +71,11 @@ public class MainActivity extends AppCompatActivity
     private TextView counterTv;
     private boolean in_search = false;
 
+    private static EditText editSearchText;
+
     private SwipeRefreshLayout swipeLayout;
+    private NotificationCompat.Builder pnotif_builder;
+    private NotificationManager notificationManager;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -128,7 +140,7 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        final EditText editSearchText = findViewById(R.id.editSearchText);
+        editSearchText = findViewById(R.id.editSearchText);
 
         /** Refresh cards on swipe to bottom */
         swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
@@ -145,6 +157,12 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                /** Clear previous search string if the searchbox wasnt visible
+                 * to begin with.
+                 */
+               if (editSearchText.getVisibility() != View.VISIBLE)
+                   editSearchText.setText("");
+
                 /**
                  *  If the search box already has some content
                  *  treat this click as a 'post'/done button.
@@ -295,7 +313,47 @@ public class MainActivity extends AppCompatActivity
 
         // TODO: START runThread(); to be an UI update thread
         // checks active notifications, and updates current view every minute
+
+
+        /** Create a persistent notification */
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_desc);
+            int importance = NotificationManager.IMPORTANCE_LOW;
+            NotificationChannel channel = new NotificationChannel("notifier", name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        // Create an explicit intent for an Activity in your app
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+        pnotif_builder = new NotificationCompat.Builder(this, "notifier")
+                .setSmallIcon(R.drawable.ic_notifications_active)
+                .setContentTitle("Notifications Center")
+                .setContentText("Active Notifications: 0")
+                .setSubText("caching notifications.")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setAutoCancel(false)
+                .setContentIntent(pendingIntent)
+                .setShowWhen(false)
+                .setOngoing(true);
+
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+        /** Send out persistent notification */
+        notificationManager.notify(01, pnotif_builder.build());
     }
+
+
 
 
     /**
@@ -303,8 +361,6 @@ public class MainActivity extends AppCompatActivity
      */
     private void refreshCards() {
         try {
-            final EditText editSearchText = findViewById(R.id.editSearchText);
-
             swipeLayout.setRefreshing(true);
             Log.i(TAG, "Refreshing cards!");
 
@@ -319,19 +375,24 @@ public class MainActivity extends AppCompatActivity
 
             mBoundService.sync_notifications();
 
+            int num_active = mBoundService.get_active_count();
+            Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
+
+            /** Update active count label */
+            if (num_active > 99)
+                counterTv.setText(String.valueOf(99) + "+");
+            else
+                counterTv.setText(String.valueOf(num_active));
+
+
+            /** Update active notifications count in persistent notification */
+            pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
+            notificationManager.notify(01, pnotif_builder.build());
+
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
                     Log.i(TAG, "Refreshing active view cards!");
                     mBoundService.filter_active();
-
-                    int num_active = mBoundService.getAdapter().getItemCount();
-                    Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
-
-                    /** Update active count label */
-                    if (num_active > 99)
-                        counterTv.setText(String.valueOf(99) + "+");
-                    else
-                        counterTv.setText(String.valueOf(num_active));
                     break;
 
                 case CurrentNotificationsView.TYPE_ALL:
@@ -396,8 +457,13 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public void onClick(View v) {
-            Log.i(TAG, "Card clicked!");
-            handleCardClick(v);
+            try {
+                Log.i(TAG, "Card clicked:  " + recyclerView.getChildAdapterPosition(v));
+                //Log.(TAG, "pos: " + recyclerView.getChildAdapterPosition(v));
+                handleCardClick(v);
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting child position: " + e.getMessage());
+            }
         }
 
         private void handleCardClick(View v) {
@@ -406,22 +472,93 @@ public class MainActivity extends AppCompatActivity
             TextView textViewNtfcns = v.findViewById(R.id.textViewntfcn);
             ImageView imageViewBigPicture = v.findViewById(R.id.imageViewBigPicture);
 
+            LinearLayout top_card_layout = v.findViewById(R.id.top_card_layout);
+            LinearLayout group_card_layout = v.findViewById(R.id.group_card_layout);
+
+            /** This is a group-heading card */
+            if (group_card_layout.getVisibility() == View.VISIBLE) {
+                final int expanded = 0;
+                final int collapsed = 1;
+                TextView textViewPlaceholder = (TextView) v.findViewById(R.id.textViewPlaceholder);
+                Log.i(TAG, "Clicked on group header: " +  textViewPlaceholder.getText().toString());
+
+                if (textViewPlaceholder.getTag() == null)
+                    textViewPlaceholder.setTag(expanded);
+
+                int listposition = recyclerView.getChildAdapterPosition(v);
+
+                try {
+                    if ((int)textViewPlaceholder.getTag() == expanded) {
+                        Log.i(TAG, "Collapse view: " + listposition);
+
+                        int num_removed = mBoundService.collapse_group(listposition);
+                        recyclerView.getAdapter().notifyItemRangeRemoved(listposition+1,
+                                num_removed);
+
+                        Log.i(TAG, "Collapsed view from: " + (listposition+1) + " entries: " +
+                                (num_removed));
+
+                        textViewPlaceholder.setTag(collapsed);
+                        textViewPlaceholder.setCompoundDrawablesWithIntrinsicBounds(
+                                R.drawable.arrow_right_48px, 0, 0, 0);
+                    } else {
+                        Log.i(TAG, "Expand view: " + listposition);
+
+                        String searchString = editSearchText.getText().toString();
+                        if (! editSearchText.isFocused() ||
+                                searchString.isEmpty()) {
+                            searchString = "";
+                        }
+
+                        int num_added = mBoundService.expand_group(listposition, searchString);
+                        recyclerView.getAdapter().notifyItemRangeInserted(listposition+1,
+                                num_added);
+
+                        Log.i(TAG, "Expanded view from: " + (listposition+1) + " entries: " +
+                                (num_added));
+
+                        textViewPlaceholder.setTag(expanded);
+                        textViewPlaceholder.setCompoundDrawablesWithIntrinsicBounds(
+                                R.drawable.arrow_down_48px, 0, 0, 0);
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    Log.i(TAG, "Out of bounds: " + listposition);
+                }
+
+                return;
+            }
+
+            LinearLayout ntfcns_actions_layout = v.findViewById(R.id.linear_layout_actions);
+
             /** Toggle big text and un-expanded text on card click */
             if(textViewNtfcns.getVisibility() == View.GONE) {
                 textViewNtfcnsBigText.setVisibility(View.GONE);
                 textViewNtfcns.setVisibility(View.VISIBLE);
                 imageViewBigPicture.setVisibility(View.GONE);
+
+                /** Hide actions bar */
+                ntfcns_actions_layout.setVisibility(View.GONE);
+
+                EditText editTextRemoteInput = v.findViewById(R.id.editTextRemoteInput);
+
+                /** Hide remote text input */
+                editTextRemoteInput.setVisibility(View.GONE);
             } else {
                 textViewNtfcnsBigText.setVisibility(View.VISIBLE);
                 textViewNtfcns.setVisibility(View.GONE);
                 if(imageViewBigPicture.getDrawable() != null) {
                     imageViewBigPicture.setVisibility(View.VISIBLE);
                 }
+
+                /** Show actions bar */
+                ntfcns_actions_layout.setVisibility(View.VISIBLE);
             }
 
+            /**
             Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),
                     Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
+             */
         }
 
         /**
@@ -618,7 +755,6 @@ public class MainActivity extends AppCompatActivity
                  * filter current view based on search results
                  */
                 String searchString = "";
-                final EditText editSearchText = findViewById(R.id.editSearchText);
                 if (editSearchText != null &&
                         editSearchText.isFocused()) {
                     searchString = editSearchText.getText().toString();
@@ -643,7 +779,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Void aVoid) {
             try {
-                int num_active = mBoundService.getAdapter().getItemCount();
+                int num_active = mBoundService.getAdapter().getItemCount() - 1;
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
                 if (num_active > 99)

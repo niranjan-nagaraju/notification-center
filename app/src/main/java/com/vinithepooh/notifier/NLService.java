@@ -29,7 +29,11 @@ public class NLService extends NotificationListenerService {
     private static RecyclerView.Adapter adapter;
 
     private NtfcnsData ntfcn_items;
+    private int num_active = 0;
+
     private long time_since_last_resync = 0;
+    private long time_last_pruned = 0;
+
 
     /** Has listener service connected to notfication manager */
     private boolean listenerConnected = false;
@@ -88,6 +92,7 @@ public class NLService extends NotificationListenerService {
 
                         Log.i(debug_tag, "Pruning old entries");
                         ntfcn_items.prune();
+                        time_last_pruned = System.currentTimeMillis();
                     } catch (Exception e) {
                         Log.e(debug_tag, "Error in service thread" + e.getMessage());
                         break;
@@ -183,6 +188,8 @@ public class NLService extends NotificationListenerService {
         } else {
             Log.i(TAG, "Adding key: " + condensed_string + " to active table");
         }
+
+        this.num_active += 1;
     }
 
 
@@ -194,6 +201,17 @@ public class NLService extends NotificationListenerService {
                 + "\t" + sbn.getPackageName());
 
         addActiveSBN(sbn);
+
+        /** if prune/refresh thread has been killed for some reason,
+         * and prune hasnt been run for 30 minutes
+         * try pruning in current thread
+         */
+        if(System.currentTimeMillis() > time_last_pruned+30*60*1000) {
+            Log.i(TAG,"Prune thread has been inactive for over 30 minutes, pruning in main thread");
+            ntfcn_items.prune();
+            time_last_pruned = System.currentTimeMillis();
+        }
+
     }
 
     @Override
@@ -205,6 +223,7 @@ public class NLService extends NotificationListenerService {
         String condensed_string = ntfcn_items.getCondensedString(sbn);
         if ( ntfcn_items.addInactive(condensed_string, sbn) ) {
             Log.i(TAG, "key: " + condensed_string + " found in active table, removed");
+            this.num_active -= 1;
         } else {
             Log.i(TAG, "Couldn't find key: " + condensed_string + " to remove");
         }
@@ -218,15 +237,14 @@ public class NLService extends NotificationListenerService {
     public void sync_notifications() {
         Log.i(TAG,"**********  sync_notifications");
 
-        Log.i(TAG,"**********  Showing notifications");
-
         /**
          * Initially mark everything in notifications table as inactive
          */
         ntfcn_items.markAllInactive();
+        num_active = 0;
 
-        for (StatusBarNotification sbn : getActiveNotifications()) {
-            //StatusBarNotification asbn = sbn.clone();
+        for (StatusBarNotification asbn : getActiveNotifications()) {
+            StatusBarNotification sbn = asbn.clone();
             String condensed_string = ntfcn_items.getCondensedString(sbn);
 
             Log.i(TAG,"Condensed string: " + condensed_string);
@@ -249,9 +267,6 @@ public class NLService extends NotificationListenerService {
                 addActiveSBN(sbn);
 
                 /**
-                Log.i(TAG, "Template :" +
-                        sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE) + "\n");
-
 
                 if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE).equals(
                         "android.app.Notification$MessagingStyle")
@@ -300,35 +315,187 @@ public class NLService extends NotificationListenerService {
                     }
                  */
             } catch(Exception e) {
-                Log.e(TAG, "Exception occurred while printing notifications: " + e.getMessage());
+                Log.e(TAG, "Exception occurred while syncing notifications: " + e.getMessage());
             }
         }
     }
 
 
 
+    public int get_active_count() {
+        return this.num_active;
+    }
+
     public void filter_active() {
         ArrayList active = ntfcn_items.filter_active("");
+
+        /** Add a group header */
+        active.add(0, new NtfcnsDataModel(
+                null,
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
         adapter = new Ntfcns_adapter(active);
     }
 
     public void filter_all() {
         ArrayList all = ntfcn_items.filter_active("");
-        all.addAll(ntfcn_items.filter_inactive(""));
+
+        /** Add a group header */
+        all.add(0, new NtfcnsDataModel(
+                null,
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
+        ArrayList inactive = ntfcn_items.filter_inactive("");
+
+        /** Add a group header */
+        inactive.add(0, new NtfcnsDataModel(
+                null,
+                "Cached Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
+        all.addAll(inactive);
         adapter = new Ntfcns_adapter(all);
     }
 
 
     public void filter_active(String searchKey) {
         ArrayList active = ntfcn_items.filter_active(searchKey);
+
+        /** Add a group header */
+        active.add(0, new NtfcnsDataModel(
+                null,
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
         adapter = new Ntfcns_adapter(active);
     }
 
     public void filter_all(String searchKey) {
         ArrayList all = ntfcn_items.filter_active(searchKey);
-        all.addAll(ntfcn_items.filter_inactive(searchKey));
+        /** Add a group header */
+        all.add(0, new NtfcnsDataModel(
+                null,
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
 
+        ArrayList inactive = ntfcn_items.filter_inactive(searchKey);
+        /** Add a group header */
+        inactive.add(0, new NtfcnsDataModel(
+                null,
+                "Cached Notifications",
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
+        all.addAll(inactive);
         adapter = new Ntfcns_adapter(all);
+    }
+
+
+    /** remove all items from [startposition] in adapter
+     * as long as they have the same group headers
+     */
+    public int collapse_group(int startposition) {
+        ArrayList<NtfcnsDataModel> data = ((Ntfcns_adapter)adapter).getDataSet();
+        int i = startposition+1;
+        String group_header = data.get(startposition).getPlaceholder();
+
+        Log.i(TAG, "Collapse group: " + group_header);
+
+        /** when 'index' i is removed, next item to remove replaces
+         *  index i.
+         *  keep removing index i until we no longer find a match or
+         *  if i < data.size() at which point we have reached the end of the list
+         */
+        int num_removed = 0;
+        while (i < data.size() &&
+                data.get(i).getPlaceholder().equals(group_header)) {
+            data.remove(i);
+            num_removed ++;
+        }
+
+        return num_removed;
+    }
+
+
+    /** Add (previously removed + new items that arrived later)to the
+     *  arraylist if it matches group header at startposition
+     *
+     *  TODO: What about search view, what about app views?!
+     */
+    public int expand_group(int startposition,
+                             String searchKey) {
+        ArrayList<NtfcnsDataModel> data = ((Ntfcns_adapter)adapter).getDataSet();
+        ArrayList<NtfcnsDataModel> items_to_add = new ArrayList<>();
+
+        String group_header = data.get(startposition).getPlaceholder();
+
+        Log.i(TAG, "Expand group: " + group_header);
+        Log.i(TAG, "Current search key: " + searchKey);
+
+        if (group_header.contains("Active Notifications")) {
+            items_to_add = ntfcn_items.filter_active(searchKey);
+        } else if (group_header.contains("Cached Notifications")) {
+            items_to_add = ntfcn_items.filter_inactive(searchKey);
+        }
+
+        data.addAll(startposition+1, items_to_add);
+
+        return items_to_add.size();
     }
 
 

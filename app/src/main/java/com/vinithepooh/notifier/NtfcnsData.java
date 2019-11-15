@@ -2,6 +2,8 @@ package com.vinithepooh.notifier;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
@@ -23,6 +25,41 @@ public class NtfcnsData {
     public class NtfcnDataItem {
         StatusBarNotification sbn = null;
         boolean active = false;
+        String app_name = null;
+
+        String subtext = null;
+        String title = null;
+        String text = null;
+        String bigtext = null;
+
+        Drawable app_icon = null;
+        Bitmap big_icon = null;
+        Bitmap big_picture = null;
+
+
+        public NtfcnDataItem(StatusBarNotification sbn,
+                             boolean active,
+                             String app_name,
+                             String subtext,
+                             String title,
+                             String text,
+                             String bigtext,
+                             Drawable app_icon,
+                             Bitmap big_icon,
+                             Bitmap big_picture) {
+            this.sbn = sbn;
+            this.active = active;
+            this.app_name = app_name;
+            this.subtext = subtext;
+            this.title = title;
+            this.text = text;
+            this.bigtext = bigtext;
+
+            this.app_icon = app_icon;
+            this.big_icon = big_icon;
+            this.big_picture = big_picture;
+        }
+
 
         public StatusBarNotification get_sbn() {
             return sbn;
@@ -36,9 +73,42 @@ public class NtfcnsData {
             this.active = active;
         }
 
-        public NtfcnDataItem(StatusBarNotification sbn, boolean active) {
+        public void setSBN(StatusBarNotification sbn) {
             this.sbn = sbn;
-            this.active = active;
+        }
+
+
+        public String getApp_name() {
+            return app_name;
+        }
+
+        public String getSubtext() {
+            return subtext;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public String getBigText() {
+            return bigtext;
+        }
+
+
+        public Drawable getApp_icon() {
+            return app_icon;
+        }
+
+        public Bitmap getBig_icon() {
+            return big_icon;
+        }
+
+        public Bitmap getBig_picture() {
+            return big_picture;
         }
     }
 
@@ -147,7 +217,7 @@ public class NtfcnsData {
                                              boolean active,
                                              Comparator<NtfcnsDataModel> comparator) {
         ArrayList<NtfcnsDataModel> data = new ArrayList<>();
-        PackageManager pm = context.getPackageManager();
+
 
         for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
             String key = entry.getKey();
@@ -156,52 +226,38 @@ public class NtfcnsData {
             if (entry.getValue().isActive() != active)
                 continue;
 
-            StatusBarNotification sbn = entry.getValue().get_sbn();
-
             /** match search string */
             if (!key.toLowerCase().contains(searchKey.toLowerCase()))
                 continue;
 
-            String app_name;
+            StatusBarNotification sbn = entry.getValue().get_sbn();
+            String app_name = entry.getValue().getApp_name();
+            String subtext = entry.getValue().getSubtext();
+            String title = entry.getValue().getTitle();
+            String text = entry.getValue().getText();
+            String bigtext = entry.getValue().getBigText();
 
-            try {
-                app_name = (String) pm.getApplicationLabel(
-                        pm.getApplicationInfo(sbn.getPackageName(), PackageManager.GET_META_DATA));
-            } catch (Exception e) {
-                app_name = sbn.getPackageName();
-                Log.e(TAG, "Error occurred getting app name - using pkg name" +
-                        e.getMessage());
-            }
-
-            Drawable app_icon = null;
-            /** sbn.getNotification().getSmallIcon().loadDrawable(context);
-             * small icon is not always set, using app icon instead.
-             */
-
-            try {
-                app_icon = context.getPackageManager().getApplicationIcon(sbn.getPackageName());
-            } catch(Exception e) {
-                Log.e(TAG, "Error occurred getting app icon - using null" +
-                        e.getMessage());
-                app_icon = null;
-            }
-
+            Drawable app_icon = entry.getValue().getApp_icon();
+            Bitmap big_icon = entry.getValue().getBig_icon();
+            Bitmap big_picture = entry.getValue().getBig_picture();
 
             data.add(new NtfcnsDataModel(
-                    (active ? "Active Notifications" : "Past Notifications"),
+                    sbn,
+                    (active ? "Active Notifications" : "Cached Notifications"),
                     app_icon,
                     app_name,
-                    "" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUB_TEXT),
+                    subtext,
                     sbn.getPostTime(),
-                    "" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE),
-                    "" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT),
-                    "" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT),
-                    /** sbn.getNotification().getLargeIcon().loadDrawable(context) */ null,
-                    null
+                    title,
+                    text,
+                    bigtext,
+                    big_icon,
+                    big_picture
             ));
         }
 
         Collections.sort(data, comparator);
+
         return data;
     }
 
@@ -239,7 +295,76 @@ public class NtfcnsData {
             return false;
         }
 
-        this.ntfcns_table.put(key, new NtfcnDataItem(sbn, true));
+        String app_name;
+        PackageManager pm = context.getPackageManager();
+
+        try {
+            app_name = (String) pm.getApplicationLabel(
+                    pm.getApplicationInfo(sbn.getPackageName(), PackageManager.GET_META_DATA));
+        } catch (Exception e) {
+            app_name = sbn.getPackageName();
+            Log.e(TAG, "Error occurred getting app name - using pkg name" +
+                    e.getMessage());
+        }
+
+        Drawable app_icon = null;
+        /** sbn.getNotification().getSmallIcon().loadDrawable(context);
+         * small icon is not always set, using app icon instead.
+         */
+
+        try {
+            app_icon = pm.getApplicationIcon(sbn.getPackageName());
+            //app_icon = sbn.getNotification().getSmallIcon().loadDrawable(context);
+        } catch(Exception e) {
+            Log.e(TAG, "Error occurred getting app icon - using null" +
+                    e.getMessage());
+            app_icon = null;
+        }
+
+        Bitmap big_icon = null;
+        try {
+            Drawable d;
+            if (sbn.getNotification().getLargeIcon() != null) {
+                d = sbn.getNotification().getLargeIcon().loadDrawable(context);
+                big_icon = ((BitmapDrawable) d).getBitmap();
+            }
+            else
+                Log.e(TAG, "App: " + app_name + "has no large icon");
+        } catch(Exception e) {
+            Log.e(TAG, "Error occurred getting large icon - using null: " +
+                    e.getMessage());
+            big_icon = null;
+        }
+
+        Bitmap big_picture = null;
+        try {
+            if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_PICTURE) != null)
+                big_picture = (Bitmap)sbn.getNotification().extras.get(NotificationCompat.EXTRA_PICTURE);
+        } catch(Exception e) {
+            Log.e(TAG, "Error occurred getting big picture - using null: " +
+                    e.getMessage());
+            big_picture = null;
+        }
+
+        String sub_text = "";
+        if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUB_TEXT) != null)
+            sub_text += sbn.getNotification().extras.get(NotificationCompat.EXTRA_SUB_TEXT);
+
+        String title = "";
+        if(sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) != null)
+            title += sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE);
+
+        String text = "";
+        if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) != null)
+            text += sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT);
+
+        String big_text = "";
+        if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT) != null)
+            big_text += sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT);
+
+        this.ntfcns_table.put(key, new NtfcnDataItem(sbn, true,
+                app_name, sub_text, title, text, big_text,
+                app_icon, big_icon, big_picture));
         return true;
     }
 
@@ -253,6 +378,7 @@ public class NtfcnsData {
      */
     public boolean addInactive(String key, StatusBarNotification sbn) {
         if (this.ntfcns_table.containsKey(key)) {
+            this.ntfcns_table.get(key).setSBN(sbn.clone());
             this.ntfcns_table.get(key).setActive(false);
             return true;
         }
@@ -280,7 +406,9 @@ public class NtfcnsData {
 
             /**
              * remove entries older than 2 hours
+             * from the time they have been 'cleared'
              * TODO: make this 'interval' configurable
+             * TODO: Store cleared time instead of sbn post time
              */
             if (current > (sbn.getPostTime() + expire_after)) {
                 Log.i(TAG, "Pruning entry with key: " + key);

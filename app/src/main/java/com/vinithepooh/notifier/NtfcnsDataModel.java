@@ -1,13 +1,16 @@
 package com.vinithepooh.notifier;
 
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
+import android.service.notification.StatusBarNotification;
 
 /**
  * Created by vinithepooh on 14/02/19.
  */
 
 public class NtfcnsDataModel {
+    StatusBarNotification sbn;
     String placeholder;
 
     Drawable appIcon;
@@ -18,14 +21,17 @@ public class NtfcnsDataModel {
     String ntfcn_title;
     String ntfcn_contents;
     String ntfcn_bigtext;
-    Drawable largeIcon;
-    Drawable ntfcn_bigpicture;
+    Bitmap largeIcon;
+    Bitmap ntfcn_bigpicture;
 
 
-    public NtfcnsDataModel(String placeholder,
+
+    public NtfcnsDataModel(StatusBarNotification sbn,
+                           String placeholder,
                            Drawable appIcon, String app_name, String subtext, long postTime,
                            String ntfcn_title, String ntfcn_contents, String ntfcn_bigtext,
-                           Drawable largeIcon, Drawable ntfcn_bigpicture) {
+                           Bitmap largeIcon, Bitmap ntfcn_bigpicture) {
+        this.sbn = sbn;
         this.placeholder = placeholder;
         this.appIcon = appIcon;
         this.app_name = app_name;
@@ -36,6 +42,11 @@ public class NtfcnsDataModel {
         this.ntfcn_bigtext = ntfcn_bigtext;
         this.largeIcon = largeIcon;
         this.ntfcn_bigpicture = ntfcn_bigpicture;
+    }
+
+
+    public StatusBarNotification getSbn() {
+        return sbn;
     }
 
 
@@ -72,11 +83,11 @@ public class NtfcnsDataModel {
         return ntfcn_bigtext;
     }
 
-    public Drawable getLargeIcon() {
+    public Bitmap getLargeIcon() {
         return largeIcon;
     }
 
-    public Drawable getNtfcn_bigpicture() {
+    public Bitmap getNtfcn_bigpicture() {
         return ntfcn_bigpicture;
     }
 }
