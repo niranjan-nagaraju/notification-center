@@ -73,6 +73,11 @@ public class NtfcnsData {
             this.active = active;
         }
 
+        public void setSBN(StatusBarNotification sbn) {
+            this.sbn = sbn;
+        }
+
+
         public String getApp_name() {
             return app_name;
         }
@@ -238,7 +243,7 @@ public class NtfcnsData {
 
             data.add(new NtfcnsDataModel(
                     sbn,
-                    (active ? "Active Notifications" : "Past Notifications"),
+                    (active ? "Active Notifications" : "Cached Notifications"),
                     app_icon,
                     app_name,
                     subtext,
@@ -373,6 +378,7 @@ public class NtfcnsData {
      */
     public boolean addInactive(String key, StatusBarNotification sbn) {
         if (this.ntfcns_table.containsKey(key)) {
+            this.ntfcns_table.get(key).setSBN(sbn.clone());
             this.ntfcns_table.get(key).setActive(false);
             return true;
         }

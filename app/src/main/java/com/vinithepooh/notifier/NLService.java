@@ -29,7 +29,11 @@ public class NLService extends NotificationListenerService {
     private static RecyclerView.Adapter adapter;
 
     private NtfcnsData ntfcn_items;
+    private int num_active = 0;
+
     private long time_since_last_resync = 0;
+    private long time_last_pruned = 0;
+
 
     /** Has listener service connected to notfication manager */
     private boolean listenerConnected = false;
@@ -88,6 +92,7 @@ public class NLService extends NotificationListenerService {
 
                         Log.i(debug_tag, "Pruning old entries");
                         ntfcn_items.prune();
+                        time_last_pruned = System.currentTimeMillis();
                     } catch (Exception e) {
                         Log.e(debug_tag, "Error in service thread" + e.getMessage());
                         break;
@@ -183,6 +188,8 @@ public class NLService extends NotificationListenerService {
         } else {
             Log.i(TAG, "Adding key: " + condensed_string + " to active table");
         }
+
+        this.num_active += 1;
     }
 
 
@@ -193,7 +200,18 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
-        addActiveSBN(sbn.clone());
+        addActiveSBN(sbn);
+
+        /** if prune/refresh thread has been killed for some reason,
+         * and prune hasnt been run for 30 minutes
+         * try pruning in current thread
+         */
+        if(System.currentTimeMillis() > time_last_pruned+30*60*1000) {
+            Log.i(TAG,"Prune thread has been inactive for over 30 minutes, pruning in main thread");
+            ntfcn_items.prune();
+            time_last_pruned = System.currentTimeMillis();
+        }
+
     }
 
     @Override
@@ -205,6 +223,7 @@ public class NLService extends NotificationListenerService {
         String condensed_string = ntfcn_items.getCondensedString(sbn);
         if ( ntfcn_items.addInactive(condensed_string, sbn) ) {
             Log.i(TAG, "key: " + condensed_string + " found in active table, removed");
+            this.num_active -= 1;
         } else {
             Log.i(TAG, "Couldn't find key: " + condensed_string + " to remove");
         }
@@ -218,12 +237,11 @@ public class NLService extends NotificationListenerService {
     public void sync_notifications() {
         Log.i(TAG,"**********  sync_notifications");
 
-        Log.i(TAG,"**********  Showing notifications");
-
         /**
          * Initially mark everything in notifications table as inactive
          */
         ntfcn_items.markAllInactive();
+        num_active = 0;
 
         for (StatusBarNotification asbn : getActiveNotifications()) {
             StatusBarNotification sbn = asbn.clone();
@@ -304,6 +322,10 @@ public class NLService extends NotificationListenerService {
 
 
 
+    public int get_active_count() {
+        return this.num_active;
+    }
+
     public void filter_active() {
         ArrayList active = ntfcn_items.filter_active("");
 
@@ -348,7 +370,7 @@ public class NLService extends NotificationListenerService {
         /** Add a group header */
         inactive.add(0, new NtfcnsDataModel(
                 null,
-                "Past Notifications",
+                "Cached Notifications",
                 null,
                 null,
                 null,
@@ -407,7 +429,7 @@ public class NLService extends NotificationListenerService {
         /** Add a group header */
         inactive.add(0, new NtfcnsDataModel(
                 null,
-                "Past Notifications",
+                "Cached Notifications",
                 null,
                 null,
                 null,
@@ -467,7 +489,7 @@ public class NLService extends NotificationListenerService {
 
         if (group_header.contains("Active Notifications")) {
             items_to_add = ntfcn_items.filter_active(searchKey);
-        } else if (group_header.contains("Past Notifications")) {
+        } else if (group_header.contains("Cached Notifications")) {
             items_to_add = ntfcn_items.filter_inactive(searchKey);
         }
 
