@@ -1,11 +1,14 @@
 package com.vinithepooh.notifier;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Icon;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.service.notification.NotificationListenerService;
 
@@ -14,6 +17,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -41,6 +45,9 @@ public class NLService extends NotificationListenerService {
         return listenerConnected;
     }
 
+    private NotificationCompat.Builder pnotif_builder;
+    private NotificationManager notificationManager;
+
 
     public class NLBinder extends Binder {
         NLService getService() {
@@ -67,6 +74,46 @@ public class NLService extends NotificationListenerService {
                     null
             ));
         } */
+
+
+        /** Create a persistent notification */
+         // Create the NotificationChannel, but only on API 26+ because
+         // the NotificationChannel class is new and not in the support library
+         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+             CharSequence name = getString(R.string.channel_name);
+             String description = getString(R.string.channel_desc);
+             int importance = NotificationManager.IMPORTANCE_LOW;
+
+             NotificationChannel channel = new NotificationChannel("notifier", name, importance);
+             channel.setDescription(description);
+
+             // Register the channel with the system; you can't change the importance
+             // or other notification behaviors after this
+             notificationManager = getSystemService(NotificationManager.class);
+             notificationManager.createNotificationChannel(channel);
+         }
+
+         // Create an explicit intent for an Activity in your app
+         Intent intent = new Intent(this, NLService.class);
+         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+         pnotif_builder = new NotificationCompat.Builder(this, "notifier")
+         .setSmallIcon(R.drawable.ic_notifications_active)
+         .setContentTitle("Notifications Center")
+         .setContentText("Active Notifications: 0")
+         .setSubText("caching notifications from svc.")
+         .setPriority(NotificationCompat.PRIORITY_LOW)
+         .setAutoCancel(false)
+         .setContentIntent(pendingIntent)
+         .setShowWhen(false)
+         .setOngoing(true);
+
+         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+         /** Send out persistent notification */
+         notificationManager.notify(01, pnotif_builder.build());
+
         //adapter = new Ntfcns_adapter(data);
         ntfcn_items = new NtfcnsData(this.getApplicationContext());
     }
@@ -165,21 +212,21 @@ public class NLService extends NotificationListenerService {
 
 
     /** Add a status bar notification from active notifications to the active table */
-    private void addActiveSBN(StatusBarNotification sbn) {
+    private boolean addActiveSBN(StatusBarNotification sbn) {
         if ( sbn.isOngoing() || !sbn.isClearable() ) {
             Log.i(TAG, "Ongoing or not clearable, ignoring");
-            return;
+            return false;
         }
 
         Object extra_text = sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT);
         if (extra_text == null || extra_text.toString().isEmpty()) {
             Log.i(TAG, "Notifications text is empty. Ignoring");
-            return;
+            return false;
         }
 
         if (sbn.getPackageName().equals("android")) {
             Log.i(TAG, "System notifications. Ignoring");
-            return;
+            return false;
         }
 
         String condensed_string = ntfcn_items.getCondensedString(sbn);
@@ -187,9 +234,10 @@ public class NLService extends NotificationListenerService {
             Log.i(TAG, "key: " + condensed_string + " already in active table");
         } else {
             Log.i(TAG, "Adding key: " + condensed_string + " to active table");
+            this.num_active += 1;
         }
 
-        this.num_active += 1;
+        return true;
     }
 
 
@@ -200,7 +248,11 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
-        addActiveSBN(sbn);
+        if (addActiveSBN(sbn)) {
+            /** Update active notifications count in persistent notification */
+            pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
+            notificationManager.notify(01, pnotif_builder.build());
+        }
 
         /** if prune/refresh thread has been killed for some reason,
          * and prune hasnt been run for 30 minutes
@@ -211,7 +263,6 @@ public class NLService extends NotificationListenerService {
             ntfcn_items.prune();
             time_last_pruned = System.currentTimeMillis();
         }
-
     }
 
     @Override
@@ -227,6 +278,10 @@ public class NLService extends NotificationListenerService {
         } else {
             Log.i(TAG, "Couldn't find key: " + condensed_string + " to remove");
         }
+
+        /** Update active notifications count in persistent notification */
+        pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
+        notificationManager.notify(01, pnotif_builder.build());
     }
 
 
@@ -241,7 +296,6 @@ public class NLService extends NotificationListenerService {
          * Initially mark everything in notifications table as inactive
          */
         ntfcn_items.markAllInactive();
-        num_active = 0;
 
         for (StatusBarNotification asbn : getActiveNotifications()) {
             StatusBarNotification sbn = asbn.clone();
@@ -318,6 +372,10 @@ public class NLService extends NotificationListenerService {
                 Log.e(TAG, "Exception occurred while syncing notifications: " + e.getMessage());
             }
         }
+
+        /** Update active notifications count in persistent notification */
+        pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
+        notificationManager.notify(01, pnotif_builder.build());
     }
 
 

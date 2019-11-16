@@ -74,8 +74,6 @@ public class MainActivity extends AppCompatActivity
     private static EditText editSearchText;
 
     private SwipeRefreshLayout swipeLayout;
-    private NotificationCompat.Builder pnotif_builder;
-    private NotificationManager notificationManager;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -313,44 +311,6 @@ public class MainActivity extends AppCompatActivity
 
         // TODO: START runThread(); to be an UI update thread
         // checks active notifications, and updates current view every minute
-
-
-        /** Create a persistent notification */
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = getString(R.string.channel_name);
-            String description = getString(R.string.channel_desc);
-            int importance = NotificationManager.IMPORTANCE_LOW;
-            NotificationChannel channel = new NotificationChannel("notifier", name, importance);
-            channel.setDescription(description);
-            // Register the channel with the system; you can't change the importance
-            // or other notification behaviors after this
-            notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        // Create an explicit intent for an Activity in your app
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
-        pnotif_builder = new NotificationCompat.Builder(this, "notifier")
-                .setSmallIcon(R.drawable.ic_notifications_active)
-                .setContentTitle("Notifications Center")
-                .setContentText("Active Notifications: 0")
-                .setSubText("caching notifications.")
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setAutoCancel(false)
-                .setContentIntent(pendingIntent)
-                .setShowWhen(false)
-                .setOngoing(true);
-
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-
-        /** Send out persistent notification */
-        notificationManager.notify(01, pnotif_builder.build());
     }
 
 
@@ -384,10 +344,6 @@ public class MainActivity extends AppCompatActivity
             else
                 counterTv.setText(String.valueOf(num_active));
 
-
-            /** Update active notifications count in persistent notification */
-            pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
-            notificationManager.notify(01, pnotif_builder.build());
 
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
@@ -779,7 +735,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Void aVoid) {
             try {
-                int num_active = mBoundService.getAdapter().getItemCount() - 1;
+                int num_active = mBoundService.get_active_count();
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
                 if (num_active > 99)
