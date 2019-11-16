@@ -94,7 +94,7 @@ public class NLService extends NotificationListenerService {
          }
 
          // Create an explicit intent for an Activity in your app
-         Intent intent = new Intent(this, NLService.class);
+         Intent intent = new Intent(this, MainActivity.class);
          intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
          PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
