@@ -99,10 +99,10 @@ public class NLService extends NotificationListenerService {
          PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
          pnotif_builder = new NotificationCompat.Builder(this, "notifier")
-         .setSmallIcon(R.drawable.ic_notifications_active)
+         .setSmallIcon(R.mipmap.ic_launcher)
          .setContentTitle("Notifications Center")
-         .setContentText("Active Notifications: 0")
-         .setSubText("caching notifications from svc.")
+         .setContentText("Active Notifications: NA")
+         .setSubText("caching notifications")
          .setPriority(NotificationCompat.PRIORITY_LOW)
          .setAutoCancel(false)
          .setContentIntent(pendingIntent)
@@ -234,7 +234,6 @@ public class NLService extends NotificationListenerService {
             Log.i(TAG, "key: " + condensed_string + " already in active table");
         } else {
             Log.i(TAG, "Adding key: " + condensed_string + " to active table");
-            this.num_active += 1;
         }
 
         return true;
@@ -247,12 +246,6 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"**********  onNotificationPosted");
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
-
-        if (addActiveSBN(sbn)) {
-            /** Update active notifications count in persistent notification */
-            pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
-            notificationManager.notify(01, pnotif_builder.build());
-        }
 
         /** if prune/refresh thread has been killed for some reason,
          * and prune hasnt been run for 30 minutes
@@ -274,14 +267,9 @@ public class NLService extends NotificationListenerService {
         String condensed_string = ntfcn_items.getCondensedString(sbn);
         if ( ntfcn_items.addInactive(condensed_string, sbn) ) {
             Log.i(TAG, "key: " + condensed_string + " found in active table, removed");
-            this.num_active -= 1;
         } else {
             Log.i(TAG, "Couldn't find key: " + condensed_string + " to remove");
         }
-
-        /** Update active notifications count in persistent notification */
-        pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
-        notificationManager.notify(01, pnotif_builder.build());
     }
 
 
@@ -296,6 +284,7 @@ public class NLService extends NotificationListenerService {
          * Initially mark everything in notifications table as inactive
          */
         ntfcn_items.markAllInactive();
+        int active_items = 0;
 
         for (StatusBarNotification asbn : getActiveNotifications()) {
             StatusBarNotification sbn = asbn.clone();
@@ -318,7 +307,9 @@ public class NLService extends NotificationListenerService {
                 /** Add a new active notification entry or
                  * just mark it as active if it already exists
                  */
-                addActiveSBN(sbn);
+                if (addActiveSBN(sbn)) {
+                    active_items ++;
+                }
 
                 /**
 
@@ -372,6 +363,8 @@ public class NLService extends NotificationListenerService {
                 Log.e(TAG, "Exception occurred while syncing notifications: " + e.getMessage());
             }
         }
+
+        this.num_active = active_items;
 
         /** Update active notifications count in persistent notification */
         pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
