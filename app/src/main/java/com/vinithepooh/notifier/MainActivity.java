@@ -135,6 +135,7 @@ public class MainActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle("Active Notifications");
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -626,24 +627,14 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        MenuItem menuItem = null;
-
-        Log.i(TAG, "Menu clicked: " + id);
-        try {
-            if (menuItem == item) {
-                Log.i(TAG, "Custom menu: ");
-            } else {
-                Log.i(TAG, "*** NOT custom menu: ");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Exception occurred while comparing menus: " + e.getMessage());
-        }
+        Toolbar toolbar = findViewById(R.id.toolbar);
 
         if (id == R.id.nav_ntfcns) {
             // Handle the active notifications action
             Log.d(TAG, "Listing notifications");
             try {
                 currentNotificationsView = CurrentNotificationsView.TYPE_ACTIVE;
+                toolbar.setTitle("Active Notifications");
                 refreshCards();
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while refreshing active notifications: " +
@@ -654,6 +645,7 @@ public class MainActivity extends AppCompatActivity
             Log.d(TAG, "Listing all notifications");
             try {
                 currentNotificationsView = CurrentNotificationsView.TYPE_ALL;
+                toolbar.setTitle("All Notifications");
                 refreshCards();
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while refreshing all notifications: " +
@@ -717,10 +709,12 @@ public class MainActivity extends AppCompatActivity
                     in_search = true;
                 }
 
-                if ( currentNotificationsView == CurrentNotificationsView.TYPE_ALL)
+                if ( currentNotificationsView == CurrentNotificationsView.TYPE_ALL) {
                     mBoundService.filter_all(searchString);
-                else
+                }
+                else if (currentNotificationsView == CurrentNotificationsView.TYPE_ACTIVE) {
                     mBoundService.filter_active(searchString);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG, "Exception in Asynctask - Error: " + e.getMessage());
