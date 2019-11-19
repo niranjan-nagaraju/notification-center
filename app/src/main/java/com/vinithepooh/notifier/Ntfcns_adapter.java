@@ -206,6 +206,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         /** set active status if notification is still in the status bar */
         if (dataSet.get(listPosition).getNtfcn_active_status() == false)
             textViewActiveStatus.setVisibility(View.GONE);
+        else
+            textViewActiveStatus.setVisibility(View.VISIBLE);
 
         textViewNtfcnsTitle.setText(dataSet.get(listPosition).getNtfcn_title());
 
