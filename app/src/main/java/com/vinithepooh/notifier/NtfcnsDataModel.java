@@ -17,10 +17,14 @@ public class NtfcnsDataModel {
     String app_name;
     String subtext;
     long postTime;
+    Boolean ntfcn_active_status;
+
 
     String ntfcn_title;
     String ntfcn_contents;
     String ntfcn_bigtext;
+
+
     Bitmap largeIcon;
     Bitmap ntfcn_bigpicture;
 
@@ -29,6 +33,7 @@ public class NtfcnsDataModel {
     public NtfcnsDataModel(StatusBarNotification sbn,
                            String placeholder,
                            Drawable appIcon, String app_name, String subtext, long postTime,
+                           Boolean ntfcn_active_status,
                            String ntfcn_title, String ntfcn_contents, String ntfcn_bigtext,
                            Bitmap largeIcon, Bitmap ntfcn_bigpicture) {
         this.sbn = sbn;
@@ -42,6 +47,7 @@ public class NtfcnsDataModel {
         this.ntfcn_bigtext = ntfcn_bigtext;
         this.largeIcon = largeIcon;
         this.ntfcn_bigpicture = ntfcn_bigpicture;
+        this.ntfcn_active_status = ntfcn_active_status;
     }
 
 
@@ -81,6 +87,11 @@ public class NtfcnsDataModel {
 
     public String getNtfcn_bigtext() {
         return ntfcn_bigtext;
+    }
+
+
+    public Boolean getNtfcn_active_status() {
+        return ntfcn_active_status;
     }
 
     public Bitmap getLargeIcon() {

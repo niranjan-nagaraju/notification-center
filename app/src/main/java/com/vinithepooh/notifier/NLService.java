@@ -36,7 +36,7 @@ public class NLService extends NotificationListenerService {
     private int num_active = 0;
 
     private long time_since_last_resync = 0;
-    private long time_last_pruned = 0;
+    private long time_last_pruned = System.currentTimeMillis();
 
 
     /** Has listener service connected to notfication manager */
@@ -388,6 +388,7 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 0,
+                false,
                 null,
                 null,
                 null,
@@ -409,6 +410,7 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 0,
+                false,
                 null,
                 null,
                 null,
@@ -426,6 +428,7 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 0,
+                false,
                 null,
                 null,
                 null,
@@ -449,6 +452,7 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 0,
+                false,
                 null,
                 null,
                 null,
@@ -469,6 +473,7 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 0,
+                false,
                 null,
                 null,
                 null,
@@ -485,6 +490,7 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 0,
+                false,
                 null,
                 null,
                 null,

@@ -248,6 +248,7 @@ public class NtfcnsData {
                     app_name,
                     subtext,
                     sbn.getPostTime(),
+                    active,
                     title,
                     text,
                     bigtext,

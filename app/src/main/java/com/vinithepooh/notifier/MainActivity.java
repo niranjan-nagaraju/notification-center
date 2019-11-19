@@ -158,9 +158,9 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View view) {
                 /** Set search hint to highlight current view and therefore the scope of the search */
                 if (currentNotificationsView == CurrentNotificationsView.TYPE_ACTIVE)
-                    editSearchText.setHint(" Search in active notifications");
+                    editSearchText.setHint(" Search within active notifications");
                 else if(currentNotificationsView == CurrentNotificationsView.TYPE_ALL)
-                    editSearchText.setHint(" Search in all notifications");
+                    editSearchText.setHint(" Search within all notifications");
 
                 /** Clear previous search string if the searchbox wasnt visible
                  * to begin with.
