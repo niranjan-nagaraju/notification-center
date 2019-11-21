@@ -247,6 +247,8 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
+        addActiveSBN(sbn);
+
         /** if prune/refresh thread has been killed for some reason,
          * and prune hasnt been run for 30 minutes
          * try pruning in current thread
@@ -286,15 +288,14 @@ public class NLService extends NotificationListenerService {
         ntfcn_items.markAllInactive();
         int active_items = 0;
 
-        for (StatusBarNotification asbn : getActiveNotifications()) {
-            StatusBarNotification sbn = asbn.clone();
+        PackageManager pm = getPackageManager();
+
+        for (StatusBarNotification sbn : getActiveNotifications()) {
             String condensed_string = ntfcn_items.getCondensedString(sbn);
 
             Log.i(TAG,"Condensed string: " + condensed_string);
 
             try {
-
-                PackageManager pm = getPackageManager();
 
                 String app_name = (String) pm.getApplicationLabel(
                         pm.getApplicationInfo(sbn.getPackageName(), PackageManager.GET_META_DATA));
