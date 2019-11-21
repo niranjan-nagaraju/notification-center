@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity
 
     private final String TAG = "bulletin_board";
     private final String APP_NAME="Notifications Center";
+    private boolean first_run = true;
 
 
     private @CurrentNotificationsView.CurrentViewMode int currentNotificationsView =
@@ -351,15 +352,19 @@ public class MainActivity extends AppCompatActivity
             else
                 counterTv.setText(String.valueOf(num_active));
 
+            Toolbar toolbar = findViewById(R.id.toolbar);
+
 
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
                     Log.i(TAG, "Refreshing active view cards!");
+                    toolbar.setTitle("Active Notifications");
                     mBoundService.filter_active();
                     break;
 
                 case CurrentNotificationsView.TYPE_ALL:
                     Log.i(TAG, "Refreshing all view cards!");
+                    toolbar.setTitle("All Notifications");
                     mBoundService.filter_all();
                     break;
 
@@ -385,6 +390,10 @@ public class MainActivity extends AppCompatActivity
         try {
             //mBoundService.sync_notifications();
             Log.i(TAG, "Searching for: " + searchKey);
+
+            Toolbar toolbar = findViewById(R.id.toolbar);
+
+            toolbar.setTitle("Searching for: " + searchKey);
 
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
@@ -552,7 +561,10 @@ public class MainActivity extends AppCompatActivity
         super.onStart();
 
         /** refresh tasks on startup */
-        new RefreshCardsAsyncTask().execute();
+        if (first_run) {
+            new RefreshCardsAsyncTask().execute();
+            first_run = false;
+        }
     }
 
 
