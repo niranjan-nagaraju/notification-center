@@ -148,7 +148,12 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onRefresh() {
                 swipeLayout.setRefreshing(true);
-                refreshCards();
+                if(in_search) {
+                    performSearch(editSearchText.getText().toString());
+                    swipeLayout.setRefreshing(false);
+                } else {
+                    refreshCards();
+                }
             }
         });
 
@@ -207,9 +212,6 @@ public class MainActivity extends AppCompatActivity
                                     searchString,
                             Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
-
-                    /** clear text for future searches */
-                    editSearchText.setText("");
 
                     performSearch(searchString);
                     return true;
@@ -329,7 +331,9 @@ public class MainActivity extends AppCompatActivity
      */
     private void refreshCards() {
         try {
-            swipeLayout.setRefreshing(true);
+            if (!swipeLayout.isRefreshing())
+                swipeLayout.setRefreshing(true);
+
             Log.i(TAG, "Refreshing cards!");
 
             /** Refreshing cards on a search view should refresh current search results */
@@ -337,7 +341,10 @@ public class MainActivity extends AppCompatActivity
             if (editSearchText.isFocused() &&
                     !searchString.isEmpty()) {
                 performSearch(searchString);
-                swipeLayout.setRefreshing(false);
+
+                if (swipeLayout.isRefreshing())
+                    swipeLayout.setRefreshing(false);
+
                 return;
             }
 
