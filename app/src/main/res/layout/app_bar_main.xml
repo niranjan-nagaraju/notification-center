@@ -51,11 +51,12 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
-        android:tint="@color/cardview_light_background"
-        app:backgroundTint="?android:attr/colorSecondary"
-        app:elevation="5dp"
+        android:fadingEdge="horizontal|vertical"
+        android:tint="@android:color/white"
+        app:backgroundTint="@android:color/holo_blue_dark"
+        app:elevation="20dp"
         app:fabSize="normal"
-        app:rippleColor="@color/colorPrimaryDark"
+        app:rippleColor="@android:color/holo_blue_dark"
         app:srcCompat="@android:drawable/ic_menu_search" />
 
 </android.support.design.widget.CoordinatorLayout>
