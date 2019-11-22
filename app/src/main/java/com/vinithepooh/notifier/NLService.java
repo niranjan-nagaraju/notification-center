@@ -288,15 +288,15 @@ public class NLService extends NotificationListenerService {
         ntfcn_items.markAllInactive();
         int active_items = 0;
 
-        PackageManager pm = getPackageManager();
+        for (StatusBarNotification asbn : getActiveNotifications()) {
+            StatusBarNotification sbn = asbn;
 
-        for (StatusBarNotification sbn : getActiveNotifications()) {
             String condensed_string = ntfcn_items.getCondensedString(sbn);
 
             Log.i(TAG,"Condensed string: " + condensed_string);
 
             try {
-
+                PackageManager pm = getPackageManager();
                 String app_name = (String) pm.getApplicationLabel(
                         pm.getApplicationInfo(sbn.getPackageName(), PackageManager.GET_META_DATA));
 
@@ -328,9 +328,9 @@ public class NLService extends NotificationListenerService {
                     Log.i(TAG, "Extra conversation title: " +
                             sbn.getNotification().extras.get(NotificationCompat.EXTRA_CONVERSATION_TITLE));
                 }
-                 */
 
-                /**
+
+
                     Log.i(TAG, "Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) + "\n");
                     Log.i(TAG, "Text :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) + "\n");
                     Log.i(TAG, "Extra conv titles: " + sbn.getNotification().extras.get(NotificationCompat.EXTRA_CONVERSATION_TITLE));
@@ -360,6 +360,7 @@ public class NLService extends NotificationListenerService {
                         Log.i(TAG, "Action :" + action.title + " Intent: " + action.actionIntent.toString() + "\n");
                     }
                  */
+
             } catch(Exception e) {
                 Log.e(TAG, "Exception occurred while syncing notifications: " + e.getMessage());
             }

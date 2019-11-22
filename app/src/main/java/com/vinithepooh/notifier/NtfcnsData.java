@@ -326,11 +326,12 @@ public class NtfcnsData {
         try {
             Drawable d;
             if (sbn.getNotification().getLargeIcon() != null) {
-                d = sbn.getNotification().getLargeIcon().loadDrawable(context);
+                d = sbn.getNotification().getLargeIcon().loadDrawable(context.getApplicationContext());
                 big_icon = ((BitmapDrawable) d).getBitmap();
             }
-            else
-                Log.e(TAG, "App: " + app_name + "has no large icon");
+            else {
+                Log.e(TAG, "App: " + app_name + " has no large icon");
+            }
         } catch(Exception e) {
             Log.e(TAG, "Error occurred getting large icon - using null: " +
                     e.getMessage());
@@ -363,7 +364,7 @@ public class NtfcnsData {
         if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT) != null)
             big_text += sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT);
 
-        this.ntfcns_table.put(key, new NtfcnDataItem(sbn, true,
+        this.ntfcns_table.put(key, new NtfcnDataItem(sbn.clone(), true,
                 app_name, sub_text, title, text, big_text,
                 app_icon, big_icon, big_picture));
         return true;
