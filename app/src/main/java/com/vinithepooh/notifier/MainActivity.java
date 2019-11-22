@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity
 
     private final String TAG = "bulletin_board";
     private final String APP_NAME="Notifications Center";
-    private boolean first_run = true;
+    private long last_refresh_time = 0;
 
 
     private @CurrentNotificationsView.CurrentViewMode int currentNotificationsView =
@@ -567,10 +567,12 @@ public class MainActivity extends AppCompatActivity
     public void onStart() {
         super.onStart();
 
-        /** refresh tasks on startup */
-        if (first_run) {
+        /** refresh tasks on startup +
+         * every time the activity is back to focus but only if its been a while
+         */
+        if (System.currentTimeMillis() > last_refresh_time + 60*1000) {
             new RefreshCardsAsyncTask().execute();
-            first_run = false;
+            last_refresh_time = System.currentTimeMillis();
         }
     }
 
