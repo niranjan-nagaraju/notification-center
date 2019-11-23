@@ -244,7 +244,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
         /** Fill notification actions */
         StatusBarNotification sbn = dataSet.get(listPosition).getSbn();
-        
+
         for (int i=0; i<max_actions; i++) {
             ntfcn_action[i].setText("");
             ntfcn_action[i].setVisibility(View.GONE);

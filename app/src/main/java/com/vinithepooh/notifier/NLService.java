@@ -38,7 +38,6 @@ public class NLService extends NotificationListenerService {
     private long time_since_last_resync = 0;
     private long time_last_pruned = System.currentTimeMillis();
 
-
     /** Has listener service connected to notfication manager */
     private boolean listenerConnected = false;
     public boolean isListenerConnected() {
@@ -126,20 +125,22 @@ public class NLService extends NotificationListenerService {
                 String debug_tag = TAG + "_thread";
                 while (true) {
                     try {
-                        /** Resync active notifications every 10 minutes */
-                        time_since_last_resync += 1;
-                        if (time_since_last_resync > 10) {
-                            time_since_last_resync = 0;
-                            Log.i(TAG, "Resync in progress!");
-                            sync_notifications();
-                        }
-
                         /** sleep for 1 minute */
                         Thread.sleep(60000);
 
-                        Log.i(debug_tag, "Pruning old entries");
-                        ntfcn_items.prune();
-                        time_last_pruned = System.currentTimeMillis();
+                        if (System.currentTimeMillis() > time_last_pruned + 60*1000) {
+                            Log.i(debug_tag, "Pruning old entries");
+                            ntfcn_items.prune();
+
+                            time_last_pruned = System.currentTimeMillis();
+                        }
+
+                        /** Resync active notifications every 5 minutes */
+                        if (System.currentTimeMillis() > time_since_last_resync + 5*60*1000) {
+                            time_since_last_resync = System.currentTimeMillis();
+                            Log.i(TAG, "Resync in progress!");
+                            sync_notifications();
+                        }
                     } catch (Exception e) {
                         Log.e(debug_tag, "Error in service thread" + e.getMessage());
                         break;
