@@ -135,7 +135,7 @@ public class NLService extends NotificationListenerService {
                         }
 
                         /** sleep for 1 minute */
-                        Thread.sleep(60*1000);
+                        Thread.sleep(60000);
 
                         Log.i(debug_tag, "Pruning old entries");
                         ntfcn_items.prune();
@@ -247,7 +247,7 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
-        addActiveSBN(sbn);
+        addActiveSBN(sbn.clone());
 
         /** if prune/refresh thread has been killed for some reason,
          * and prune hasnt been run for 30 minutes
@@ -289,7 +289,7 @@ public class NLService extends NotificationListenerService {
         int active_items = 0;
 
         for (StatusBarNotification asbn : getActiveNotifications()) {
-            StatusBarNotification sbn = asbn;
+            StatusBarNotification sbn = asbn.clone();
 
             String condensed_string = ntfcn_items.getCondensedString(sbn);
 
