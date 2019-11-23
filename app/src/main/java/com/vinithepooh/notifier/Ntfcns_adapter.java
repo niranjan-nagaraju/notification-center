@@ -236,7 +236,6 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
         if (dataSet.get(listPosition).getNtfcn_bigpicture() != null) {
             imageViewBigPicture.setImageBitmap(dataSet.get(listPosition).getNtfcn_bigpicture());
-            imageViewBigPicture.setVisibility(View.VISIBLE);
         } else {
             imageViewBigPicture.setImageResource(0);
             imageViewBigPicture.setVisibility(View.GONE);
