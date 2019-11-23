@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity
 
     private final String TAG = "bulletin_board";
     private final String APP_NAME="Notifications Center";
+    private long last_refresh_time = 0;
 
 
     private @CurrentNotificationsView.CurrentViewMode int currentNotificationsView =
@@ -74,8 +75,6 @@ public class MainActivity extends AppCompatActivity
     private static EditText editSearchText;
 
     private SwipeRefreshLayout swipeLayout;
-    private NotificationCompat.Builder pnotif_builder;
-    private NotificationManager notificationManager;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -137,6 +136,7 @@ public class MainActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle("Active Notifications");
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -148,7 +148,12 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onRefresh() {
                 swipeLayout.setRefreshing(true);
-                refreshCards();
+                if(in_search) {
+                    performSearch(editSearchText.getText().toString());
+                    swipeLayout.setRefreshing(false);
+                } else {
+                    refreshCards();
+                }
             }
         });
 
@@ -157,6 +162,12 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                /** Set search hint to highlight current view and therefore the scope of the search */
+                if (currentNotificationsView == CurrentNotificationsView.TYPE_ACTIVE)
+                    editSearchText.setHint(" Search within active notifications");
+                else if(currentNotificationsView == CurrentNotificationsView.TYPE_ALL)
+                    editSearchText.setHint(" Search within all notifications");
+
                 /** Clear previous search string if the searchbox wasnt visible
                  * to begin with.
                  */
@@ -201,9 +212,6 @@ public class MainActivity extends AppCompatActivity
                                     searchString,
                             Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
-
-                    /** clear text for future searches */
-                    editSearchText.setText("");
 
                     performSearch(searchString);
                     return true;
@@ -313,44 +321,6 @@ public class MainActivity extends AppCompatActivity
 
         // TODO: START runThread(); to be an UI update thread
         // checks active notifications, and updates current view every minute
-
-
-        /** Create a persistent notification */
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = getString(R.string.channel_name);
-            String description = getString(R.string.channel_desc);
-            int importance = NotificationManager.IMPORTANCE_LOW;
-            NotificationChannel channel = new NotificationChannel("notifier", name, importance);
-            channel.setDescription(description);
-            // Register the channel with the system; you can't change the importance
-            // or other notification behaviors after this
-            notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        // Create an explicit intent for an Activity in your app
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
-        pnotif_builder = new NotificationCompat.Builder(this, "notifier")
-                .setSmallIcon(R.drawable.ic_notifications_active)
-                .setContentTitle("Notifications Center")
-                .setContentText("Active Notifications: 0")
-                .setSubText("caching notifications.")
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setAutoCancel(false)
-                .setContentIntent(pendingIntent)
-                .setShowWhen(false)
-                .setOngoing(true);
-
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-
-        /** Send out persistent notification */
-        notificationManager.notify(01, pnotif_builder.build());
     }
 
 
@@ -361,7 +331,9 @@ public class MainActivity extends AppCompatActivity
      */
     private void refreshCards() {
         try {
-            swipeLayout.setRefreshing(true);
+            if (!swipeLayout.isRefreshing())
+                swipeLayout.setRefreshing(true);
+
             Log.i(TAG, "Refreshing cards!");
 
             /** Refreshing cards on a search view should refresh current search results */
@@ -369,7 +341,10 @@ public class MainActivity extends AppCompatActivity
             if (editSearchText.isFocused() &&
                     !searchString.isEmpty()) {
                 performSearch(searchString);
-                swipeLayout.setRefreshing(false);
+
+                if (swipeLayout.isRefreshing())
+                    swipeLayout.setRefreshing(false);
+
                 return;
             }
 
@@ -384,19 +359,19 @@ public class MainActivity extends AppCompatActivity
             else
                 counterTv.setText(String.valueOf(num_active));
 
+            Toolbar toolbar = findViewById(R.id.toolbar);
 
-            /** Update active notifications count in persistent notification */
-            pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
-            notificationManager.notify(01, pnotif_builder.build());
 
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
                     Log.i(TAG, "Refreshing active view cards!");
+                    toolbar.setTitle("Active Notifications");
                     mBoundService.filter_active();
                     break;
 
                 case CurrentNotificationsView.TYPE_ALL:
                     Log.i(TAG, "Refreshing all view cards!");
+                    toolbar.setTitle("All Notifications");
                     mBoundService.filter_all();
                     break;
 
@@ -422,6 +397,10 @@ public class MainActivity extends AppCompatActivity
         try {
             //mBoundService.sync_notifications();
             Log.i(TAG, "Searching for: " + searchKey);
+
+            Toolbar toolbar = findViewById(R.id.toolbar);
+
+            toolbar.setTitle("Searching for: " + searchKey);
 
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
@@ -588,8 +567,13 @@ public class MainActivity extends AppCompatActivity
     public void onStart() {
         super.onStart();
 
-        /** refresh tasks on startup */
-        new RefreshCardsAsyncTask().execute();
+        /** refresh tasks on startup +
+         * every time the activity is back to focus but only if its been a while
+         */
+        if (System.currentTimeMillis() > last_refresh_time + 60*1000) {
+            new RefreshCardsAsyncTask().execute();
+            last_refresh_time = System.currentTimeMillis();
+        }
     }
 
 
@@ -670,24 +654,14 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        MenuItem menuItem = null;
-
-        Log.i(TAG, "Menu clicked: " + id);
-        try {
-            if (menuItem == item) {
-                Log.i(TAG, "Custom menu: ");
-            } else {
-                Log.i(TAG, "*** NOT custom menu: ");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Exception occurred while comparing menus: " + e.getMessage());
-        }
+        Toolbar toolbar = findViewById(R.id.toolbar);
 
         if (id == R.id.nav_ntfcns) {
             // Handle the active notifications action
             Log.d(TAG, "Listing notifications");
             try {
                 currentNotificationsView = CurrentNotificationsView.TYPE_ACTIVE;
+                toolbar.setTitle("Active Notifications");
                 refreshCards();
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while refreshing active notifications: " +
@@ -698,28 +672,13 @@ public class MainActivity extends AppCompatActivity
             Log.d(TAG, "Listing all notifications");
             try {
                 currentNotificationsView = CurrentNotificationsView.TYPE_ALL;
+                toolbar.setTitle("All Notifications");
                 refreshCards();
             } catch (Exception e) {
                 Log.e(TAG, "Exception occurred while refreshing all notifications: " +
                         e.getMessage());
             }
         }
-
-            /**
-            NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-
-            Menu menu = navigationView.getMenu();
-            menuItem = menu.add("My new menu");
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-            */
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
@@ -761,10 +720,12 @@ public class MainActivity extends AppCompatActivity
                     in_search = true;
                 }
 
-                if ( currentNotificationsView == CurrentNotificationsView.TYPE_ALL)
+                if ( currentNotificationsView == CurrentNotificationsView.TYPE_ALL) {
                     mBoundService.filter_all(searchString);
-                else
+                }
+                else if (currentNotificationsView == CurrentNotificationsView.TYPE_ACTIVE) {
                     mBoundService.filter_active(searchString);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG, "Exception in Asynctask - Error: " + e.getMessage());
@@ -779,7 +740,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Void aVoid) {
             try {
-                int num_active = mBoundService.getAdapter().getItemCount() - 1;
+                int num_active = mBoundService.get_active_count();
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
                 if (num_active > 99)

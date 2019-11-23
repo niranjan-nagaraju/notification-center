@@ -248,6 +248,7 @@ public class NtfcnsData {
                     app_name,
                     subtext,
                     sbn.getPostTime(),
+                    active,
                     title,
                     text,
                     bigtext,
@@ -291,7 +292,29 @@ public class NtfcnsData {
      */
     public boolean addActive(String key, StatusBarNotification sbn) {
         if (this.ntfcns_table.containsKey(key)) {
+            StatusBarNotification sbn_c = sbn.clone();
+            this.ntfcns_table.get(key).setSBN(sbn_c);
             this.ntfcns_table.get(key).setActive(true);
+
+            /**
+             * If large icon wasnt available earlier,
+             * check if the new clone has it,
+             * sort of like the movie, Moon. :)
+             */
+            if (this.ntfcns_table.get(key).big_icon == null) {
+                Bitmap big_icon = null;
+                try {
+                    Drawable d;
+                    if (sbn_c.getNotification().getLargeIcon() != null) {
+                        d = sbn_c.getNotification().getLargeIcon().loadDrawable(context.getApplicationContext());
+                        big_icon = ((BitmapDrawable) d).getBitmap();
+                    }
+                } catch(Exception e) {
+                    big_icon = null;
+                }
+                this.ntfcns_table.get(key).big_icon = big_icon;
+            }
+
             return false;
         }
 
@@ -325,11 +348,12 @@ public class NtfcnsData {
         try {
             Drawable d;
             if (sbn.getNotification().getLargeIcon() != null) {
-                d = sbn.getNotification().getLargeIcon().loadDrawable(context);
+                d = sbn.getNotification().getLargeIcon().loadDrawable(context.getApplicationContext());
                 big_icon = ((BitmapDrawable) d).getBitmap();
             }
-            else
-                Log.e(TAG, "App: " + app_name + "has no large icon");
+            else {
+                Log.e(TAG, "App: " + app_name + " has no large icon");
+            }
         } catch(Exception e) {
             Log.e(TAG, "Error occurred getting large icon - using null: " +
                     e.getMessage());
@@ -362,9 +386,10 @@ public class NtfcnsData {
         if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT) != null)
             big_text += sbn.getNotification().extras.get(NotificationCompat.EXTRA_BIG_TEXT);
 
-        this.ntfcns_table.put(key, new NtfcnDataItem(sbn, true,
+        this.ntfcns_table.put(key, new NtfcnDataItem(sbn.clone(), true,
                 app_name, sub_text, title, text, big_text,
                 app_icon, big_icon, big_picture));
+
         return true;
     }
 
@@ -378,8 +403,28 @@ public class NtfcnsData {
      */
     public boolean addInactive(String key, StatusBarNotification sbn) {
         if (this.ntfcns_table.containsKey(key)) {
-            this.ntfcns_table.get(key).setSBN(sbn.clone());
+            StatusBarNotification sbn_c = sbn.clone();
+            this.ntfcns_table.get(key).setSBN(sbn_c);
             this.ntfcns_table.get(key).setActive(false);
+
+            /**
+             * If large icon wasnt available earlier,
+             * check if the new clone has it,
+             * sort of like the movie, Moon. :)
+             */
+            if (this.ntfcns_table.get(key).big_icon == null) {
+                Bitmap big_icon = null;
+                try {
+                    Drawable d;
+                    if (sbn_c.getNotification().getLargeIcon() != null) {
+                        d = sbn_c.getNotification().getLargeIcon().loadDrawable(context.getApplicationContext());
+                        big_icon = ((BitmapDrawable) d).getBitmap();
+                    }
+                } catch(Exception e) {
+                    big_icon = null;
+                }
+                this.ntfcns_table.get(key).big_icon = big_icon;
+            }
             return true;
         }
 

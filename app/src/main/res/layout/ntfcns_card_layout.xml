@@ -57,7 +57,7 @@
             android:id="@+id/top_card_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginLeft="10dp"
+            android:layout_marginLeft="2dp"
             android:orientation="vertical"
             android:visibility="visible">
 
@@ -99,6 +99,7 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="@android:color/black" />
 
+
                 <TextView
                     android:id="@+id/textViewPostTime"
                     android:layout_width="wrap_content"
@@ -111,6 +112,18 @@
                     android:textAlignment="viewEnd"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="@android:color/black" />
+
+                <TextView
+                    android:id="@+id/textViewActiveStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="top"
+                    android:layout_weight="0.01"
+                    android:text="•"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:textColor="@android:color/holo_green_light" />
+
             </LinearLayout>
 
             <LinearLayout
@@ -119,11 +132,11 @@
                 android:layout_height="40dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginBottom="5dp"
-                android:layout_marginLeft="-2dp"
+                android:layout_marginLeft="0dp"
                 android:layout_marginRight="2dp"
                 android:layout_marginTop="5dp"
-                android:background="@color/cardview_shadow_start_color"
                 android:elevation="5dp"
+                android:background="@drawable/rounded_actions"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
@@ -133,8 +146,9 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:padding="5dp"
-                    android:paddingStart="10dp"
                     android:text="Action1"
+                    android:paddingStart="10dp"
+                    android:textColor="@android:color/holo_blue_dark"
                     android:textAlignment="viewStart"
                     android:textAllCaps="true"
                     android:textAppearance="?android:attr/textAppearanceSmall"
@@ -147,8 +161,9 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:padding="5dp"
-                    android:paddingStart="10dp"
                     android:text="Action2"
+                    android:paddingStart="10dp"
+                    android:textColor="@android:color/holo_blue_dark"
                     android:textAllCaps="true"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textStyle="bold"
@@ -162,6 +177,7 @@
                     android:padding="5dp"
                     android:paddingStart="10dp"
                     android:text="Action3"
+                    android:textColor="@android:color/holo_blue_dark"
                     android:textAllCaps="true"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textStyle="bold"
@@ -175,6 +191,7 @@
                     android:padding="5dp"
                     android:paddingStart="10dp"
                     android:text="Action4"
+                    android:textColor="@android:color/holo_blue_dark"
                     android:textAllCaps="true"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textStyle="bold"
@@ -188,6 +205,7 @@
                     android:padding="5dp"
                     android:paddingStart="10dp"
                     android:text="Action5"
+                    android:textColor="@android:color/holo_blue_dark"
                     android:textAllCaps="true"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textStyle="bold"
@@ -202,6 +220,7 @@
                     android:padding="5dp"
                     android:paddingStart="10dp"
                     android:text="OPEN"
+                    android:textColor="@android:color/holo_blue_dark"
                     android:textAllCaps="true"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textStyle="bold"
@@ -226,9 +245,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_horizontal|left"
+                        android:layout_marginTop="5dp"
                         android:text="Notifications Title"
                         android:textAlignment="viewStart"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:textAppearance="?android:attr/textAppearance"
                         android:textStyle="bold" />
 
                     <TextView
@@ -237,7 +257,9 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_horizontal|left"
                         android:layout_marginBottom="5dp"
+                        android:layout_marginTop="5dp"
                         android:autoLink="all"
+                        android:textColor="@android:color/black"
                         android:text="This is a test notification with a reallylongwordtotestwordbreaks\n blah..."
                         android:textAlignment="viewStart"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
@@ -250,6 +272,7 @@
                         android:layout_marginBottom="5dp"
                         android:layout_marginTop="5dp"
                         android:autoLink="all"
+                        android:textColor="@android:color/black"
                         android:text="This is an expanded test notification\n blah..."
                         android:textAlignment="viewStart"
                         android:textAppearance="?android:attr/textAppearanceSmall"

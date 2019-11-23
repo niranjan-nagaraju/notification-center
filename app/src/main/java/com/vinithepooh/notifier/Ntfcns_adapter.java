@@ -48,6 +48,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewApp;
         TextView textViewSubText;
         TextView textViewPostTime;
+        TextView textViewActiveStatus;
 
         TextView textViewNtfcnsTitle;
         TextView textViewNtfcns;
@@ -79,6 +80,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             this.textViewApp = (TextView) itemView.findViewById(R.id.textViewAppName);
             this.textViewSubText = (TextView) itemView.findViewById(R.id.textViewSubText);
             this.textViewPostTime = (TextView) itemView.findViewById(R.id.textViewPostTime);
+            this.textViewActiveStatus = (TextView) itemView.findViewById(R.id.textViewActiveStatus);
 
             this.textViewNtfcnsTitle = (TextView) itemView.findViewById(R.id.textViewntfcnTitle);
             this.textViewNtfcns = (TextView) itemView.findViewById(R.id.textViewntfcn);
@@ -127,6 +129,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewApp = holder.textViewApp;
         TextView textViewSubText = holder.textViewSubText;
         TextView textViewPostTime = holder.textViewPostTime;
+        TextView textViewActiveStatus = holder.textViewActiveStatus;
 
         TextView textViewNtfcnsTitle = holder.textViewNtfcnsTitle;
         final TextView textViewNtfcns = holder.textViewNtfcns;
@@ -199,6 +202,12 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
         textViewPostTime.setText(
                 DateUtils.getRelativeTimeSpanString(dataSet.get(listPosition).getPostTime()));
+
+        /** set active status if notification is still in the status bar */
+        if (dataSet.get(listPosition).getNtfcn_active_status() == false)
+            textViewActiveStatus.setVisibility(View.GONE);
+        else
+            textViewActiveStatus.setVisibility(View.VISIBLE);
 
         textViewNtfcnsTitle.setText(dataSet.get(listPosition).getNtfcn_title());
 
