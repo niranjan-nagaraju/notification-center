@@ -4,6 +4,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.service.notification.StatusBarNotification;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NotificationCompat;
@@ -183,10 +185,14 @@ public class MainActivity extends AppCompatActivity
                     String searchString = editSearchText.getText().toString();
 
                     editSearchText.clearFocus();
+                    /**
                     Snackbar.make(findViewById(android.R.id.content), "searching for: " +
                                     searchString,
                             Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+                            .setAction("Action", null).show(); */
+
+                    Toast.makeText(getApplicationContext(), "searching for: " + searchString,
+                            Toast.LENGTH_LONG).show();
 
                     /** clear text for future searches */
                     editSearchText.setText("");
@@ -437,8 +443,11 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onClick(View v) {
             try {
+                ArrayList<NtfcnsDataModel> dataSet = ((Ntfcns_adapter)recyclerView.getAdapter()).getDataSet();
                 Log.i(TAG, "Card clicked:  " + recyclerView.getChildAdapterPosition(v));
                 //Log.(TAG, "pos: " + recyclerView.getChildAdapterPosition(v));
+                Log.i(TAG, "Card app: " +
+                        dataSet.get(recyclerView.getChildAdapterPosition(v)).getApp_name());
                 handleCardClick(v);
             } catch (Exception e) {
                 Log.e(TAG, "Error getting child position: " + e.getMessage());
@@ -453,6 +462,7 @@ public class MainActivity extends AppCompatActivity
 
             LinearLayout top_card_layout = v.findViewById(R.id.top_card_layout);
             LinearLayout group_card_layout = v.findViewById(R.id.group_card_layout);
+            int listposition = recyclerView.getChildAdapterPosition(v);
 
             /** This is a group-heading card */
             if (group_card_layout.getVisibility() == View.VISIBLE) {
@@ -463,8 +473,6 @@ public class MainActivity extends AppCompatActivity
 
                 if (textViewPlaceholder.getTag() == null)
                     textViewPlaceholder.setTag(expanded);
-
-                int listposition = recyclerView.getChildAdapterPosition(v);
 
                 try {
                     if ((int)textViewPlaceholder.getTag() == expanded) {
@@ -507,37 +515,19 @@ public class MainActivity extends AppCompatActivity
                 return;
             }
 
-            LinearLayout ntfcns_actions_layout = v.findViewById(R.id.linear_layout_actions);
+            /** Regular card - open notification on click */
 
-            /** Toggle big text and un-expanded text on card click */
-            if(textViewNtfcns.getVisibility() == View.GONE) {
-                textViewNtfcnsBigText.setVisibility(View.GONE);
-                textViewNtfcns.setVisibility(View.VISIBLE);
-                imageViewBigPicture.setVisibility(View.GONE);
+            ArrayList<NtfcnsDataModel> dataSet = ((Ntfcns_adapter)recyclerView.getAdapter()).getDataSet();
+            StatusBarNotification sbn = dataSet.get(listposition).getSbn();
+            final Notification ntfcn = sbn.getNotification();
 
-                /** Hide actions bar */
-                ntfcns_actions_layout.setVisibility(View.GONE);
-
-                EditText editTextRemoteInput = v.findViewById(R.id.editTextRemoteInput);
-
-                /** Hide remote text input */
-                editTextRemoteInput.setVisibility(View.GONE);
-            } else {
-                textViewNtfcnsBigText.setVisibility(View.VISIBLE);
-                textViewNtfcns.setVisibility(View.GONE);
-                if(imageViewBigPicture.getDrawable() != null) {
-                    imageViewBigPicture.setVisibility(View.VISIBLE);
-                }
-
-                /** Show actions bar */
-                ntfcns_actions_layout.setVisibility(View.VISIBLE);
+            Log.i(TAG, "Opening notification");
+            try {
+                ntfcn.contentIntent.send(v.getContext().getApplicationContext(), 0, new Intent());
+            } catch (PendingIntent.CanceledException e) {
+                Log.e(TAG, "Exception executing open action: " +
+                        e.getMessage());
             }
-
-            /**
-            Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),
-                    Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-             */
         }
 
         /**
@@ -707,6 +697,7 @@ public class MainActivity extends AppCompatActivity
                 while(!mBoundService.isListenerConnected());
 
                 Log.i(TAG, "Service bound - updating cards");
+
                 mBoundService.sync_notifications();
 
                 /**
@@ -750,6 +741,7 @@ public class MainActivity extends AppCompatActivity
 
                 recyclerView.setAdapter(mBoundService.getAdapter());
                 mBoundService.getAdapter().notifyDataSetChanged();
+
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG, "Exception in postExecute - Error: " + e.getMessage());

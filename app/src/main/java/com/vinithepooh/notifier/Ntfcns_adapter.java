@@ -37,6 +37,7 @@ import java.util.ArrayList;
 public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHolder>{
     private ArrayList<NtfcnsDataModel> dataSet;
     final static int max_actions = 5;
+    private final String TAG = "bulletin_board_adapter";
 
     public static class NViewHolder extends RecyclerView.ViewHolder {
 
@@ -59,6 +60,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         CardView card_view;
 
         LinearLayout ntfcns_actions_layout;
+        LinearLayout ntfcn_header_layout;
         TextView[] ntfcn_action = new TextView[max_actions];
         EditText editTextRemoteInput;
 
@@ -75,6 +77,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             this.textViewPlaceholder = (TextView) itemView.findViewById(R.id.textViewPlaceholder);
             this.top_card_layout = itemView.findViewById(R.id.top_card_layout);
             this.group_card_layout = itemView.findViewById(R.id.group_card_layout);
+            this.ntfcn_header_layout = itemView.findViewById(R.id.ntfcn_header_layout);
 
             this.imageViewAppIcon = (ImageView)  itemView.findViewById(R.id.imageViewAppIcon);
             this.textViewApp = (TextView) itemView.findViewById(R.id.textViewAppName);
@@ -124,6 +127,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewPlaceholder = holder.textViewPlaceholder;
         LinearLayout top_card_layout = holder.top_card_layout;
         LinearLayout group_card_layout = holder.group_card_layout;
+        LinearLayout ntfcn_header_layout = holder.ntfcn_header_layout;
 
         ImageView imageViewAppIcon = holder.imageViewAppIcon;
         TextView textViewApp = holder.textViewApp;
@@ -139,8 +143,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
 
         final LinearLayout ntfcns_action_lyt = holder.ntfcns_actions_layout;
-        TextView[] ntfcn_action = holder.ntfcn_action;
-        TextView ntfcn_open_action = holder.ntfcn_open_action;
+        final TextView[] ntfcn_action = holder.ntfcn_action;
+        final TextView ntfcn_open_action = holder.ntfcn_open_action;
         final EditText editTextRemoteInput = holder.editTextRemoteInput;
 
         holder.card_view.setOnClickListener(MainActivity.cardsOnClickListener);
@@ -158,6 +162,48 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             }
         });
          */
+
+        ntfcn_header_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i(TAG, "Clicked header");
+
+
+                /** Toggle big text and un-expanded text on card click */
+                if(textViewNtfcns.getVisibility() == View.GONE) {
+                    textViewNtfcnsBigText.setVisibility(View.GONE);
+                    textViewNtfcns.setVisibility(View.VISIBLE);
+                    imageViewBigPicture.setVisibility(View.GONE);
+
+                    /** Hide actions bar */
+                    ntfcns_action_lyt.setVisibility(View.GONE);
+
+                    /** Hide remote text input */
+                    editTextRemoteInput.setVisibility(View.GONE);
+                } else {
+                    textViewNtfcnsBigText.setVisibility(View.VISIBLE);
+                    textViewNtfcns.setVisibility(View.GONE);
+                    if(imageViewBigPicture.getDrawable() != null) {
+                        imageViewBigPicture.setVisibility(View.VISIBLE);
+                    }
+
+                    /** Show actions bar but only if there's atleast one action for the notification */
+                    if (ntfcn_action[0].getText().length() != 0)
+                        ntfcns_action_lyt.setVisibility(View.VISIBLE);
+
+                    /**
+                     * Expanded view is exactly the same as un-expanded
+                     * Treat it as a regular card click and open the notification
+                     */
+                    if (textViewNtfcns.getText().equals(textViewNtfcnsBigText.getText()) &&
+                            imageViewBigPicture.getDrawable() == null &&
+                            ntfcns_action_lyt.getVisibility() != View.VISIBLE) {
+
+                        ntfcn_open_action.performClick();
+                    }
+                }
+            }
+        });
 
 
         // or when placeholder text has changed from the last card
@@ -262,7 +308,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                 boolean remote_found = false;
                 if (ris != null) {
                     for (RemoteInput ri : ris) {
-                        Log.i("bulletin_board_adapter",
+                        Log.i(TAG,
                                 dataSet.get(listPosition).getApp_name() +
                                         ": Remote input found for action: " + action.title + " key: " +
                                         ri.getResultKey());
@@ -299,7 +345,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
                                     editTextRemoteInput.clearFocus();
                                     editTextRemoteInput.setVisibility(View.GONE);
-                                    Log.i("bulletin_board_adapter", "Remote input: " +
+                                    Log.i(TAG, "Remote input: " +
                                             editTextRemoteInput.getText());
 
                                     /** clear text for future  */
@@ -318,7 +364,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                     ArrayList<RemoteInput> actualInputs = new ArrayList<>();
 
                                     for (RemoteInput ri : ris) {
-                                        Log.i("bulletin_board_adapter", "RemoteInput: " + ri.getLabel());
+                                        Log.i(TAG, "RemoteInput: " + ri.getLabel());
                                         bundle.putCharSequence(ri.getResultKey(), inputString);
                                         RemoteInput.Builder builder = new RemoteInput.Builder(ri.getResultKey());
                                         builder.setLabel(ri.getLabel());
@@ -332,7 +378,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                     RemoteInput.addResultsToIntent(inputs, intent, bundle);
                                     action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
                                 } catch (Exception e) {
-                                    Log.e("bulletin_board_adapter", "Error in remote input: " +
+                                    Log.e(TAG, "Error in remote input: " +
                                             e.getMessage());
                                 }
                                 return true;
@@ -355,7 +401,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
                                         editTextRemoteInput.clearFocus();
                                         editTextRemoteInput.setVisibility(View.GONE);
-                                        Log.i("bulletin_board_adapter", "Remote input: " +
+                                        Log.i(TAG, "Remote input: " +
                                                 editTextRemoteInput.getText());
 
                                         /** clear text for future  */
@@ -388,7 +434,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                         RemoteInput.addResultsToIntent(inputs, intent, bundle);
                                         action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
                                     } catch (Exception e) {
-                                        Log.e("bulletin_board_adapter", "Error in remote input: " +
+                                        Log.e(TAG, "Error in remote input: " +
                                                 e.getMessage());
                                     }
                                     return true;
@@ -453,13 +499,15 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                             try {
                                 action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
                             } catch (PendingIntent.CanceledException e) {
-                                Log.e("bulletin_board_adapter", "Exception executing action: " +
+                                Log.e(TAG, "Exception executing action: " +
                                         e.getMessage());
                             }
                         }
                     });
                 }
             }
+
+            ntfcn_open_action.setVisibility(View.GONE);
 
             ntfcn_open_action.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -469,58 +517,16 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                     try {
                         ntfcn.contentIntent.send(v.getContext().getApplicationContext(), 0, intent);
                     } catch (PendingIntent.CanceledException e) {
-                        Log.e("bulletin_board_adapter", "Exception executing open action: " +
+                        Log.e(TAG, "Exception executing open action: " +
                                 e.getMessage());
                     }
                 }
             });
 
-
         } catch (Exception e) {
-            Log.e("bulletin_board_adapter", "Exception occurred while getting actions" +
+            Log.e(TAG, "Exception occurred while getting actions" +
                     e.getMessage());
         }
-
-        textViewNtfcns.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                /**
-                 * Toggle short text visibility to big text
-                 * (but only if the notification has 'big text'
-                 * also expand big picture (if exists) on card click
-                 */
-                if (!textViewNtfcnsBigText.getText().toString().isEmpty()) {
-                    textViewNtfcnsBigText.setVisibility(View.VISIBLE);
-                    textViewNtfcns.setVisibility(View.GONE);
-                }
-                if(imageViewBigPicture.getDrawable() != null) {
-                    imageViewBigPicture.setVisibility(View.VISIBLE);
-                }
-
-                /** Show actions bar */
-                ntfcns_action_lyt.setVisibility(View.VISIBLE);
-
-            }
-        });
-
-        textViewNtfcnsBigText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                /**
-                 * Toggle big text visibility to short text
-                 * and un-expanded text on card click
-                 */
-                textViewNtfcnsBigText.setVisibility(View.GONE);
-                textViewNtfcns.setVisibility(View.VISIBLE);
-                imageViewBigPicture.setVisibility(View.GONE);
-
-                /** Hide actions bar */
-                ntfcns_action_lyt.setVisibility(View.GONE);
-
-                /** Hide remote text input */
-                editTextRemoteInput.setVisibility(View.GONE);
-            }
-        });
     }
 
     @Override
