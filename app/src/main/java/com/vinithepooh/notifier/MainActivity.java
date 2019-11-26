@@ -516,18 +516,8 @@ public class MainActivity extends AppCompatActivity
             }
 
             /** Regular card - open notification on click */
-
-            ArrayList<NtfcnsDataModel> dataSet = ((Ntfcns_adapter)recyclerView.getAdapter()).getDataSet();
-            StatusBarNotification sbn = dataSet.get(listposition).getSbn();
-            final Notification ntfcn = sbn.getNotification();
-
-            Log.i(TAG, "Opening notification");
-            try {
-                ntfcn.contentIntent.send(v.getContext().getApplicationContext(), 0, new Intent());
-            } catch (PendingIntent.CanceledException e) {
-                Log.e(TAG, "Exception executing open action: " +
-                        e.getMessage());
-            }
+            TextView ntfcn_open_action = v.findViewById(R.id.ntfcn_open_action);
+            ntfcn_open_action.performClick();
         }
 
         /**

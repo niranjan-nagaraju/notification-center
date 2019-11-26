@@ -527,6 +527,23 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             Log.e(TAG, "Exception occurred while getting actions" +
                     e.getMessage());
         }
+
+        /** Autolink prevents card view onclick() from working, add an explicit listener */
+        textViewNtfcnsBigText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ntfcn_open_action.performClick();
+            }
+        });
+
+
+        /** Autolink prevents card view onclick() from working, add an explicit listener */
+        textViewNtfcns.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ntfcn_open_action.performClick();
+            }
+        });
     }
 
     @Override

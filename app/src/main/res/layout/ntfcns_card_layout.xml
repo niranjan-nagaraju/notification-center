@@ -66,7 +66,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:paddingTop="5dp"
-                android:paddingBottom="5dp"
+                android:paddingBottom="10dp"
                 android:clickable="true"
                 android:orientation="horizontal">
 
@@ -138,7 +138,7 @@
                 android:layout_marginBottom="5dp"
                 android:layout_marginLeft="0dp"
                 android:layout_marginRight="2dp"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="1dp"
                 android:elevation="5dp"
                 android:background="@drawable/rounded_actions"
                 android:orientation="horizontal"
@@ -249,7 +249,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_horizontal|left"
-                        android:layout_marginTop="5dp"
+                        android:layout_marginTop="1dp"
                         android:text="Notifications Title"
                         android:textAlignment="viewStart"
                         android:textAppearance="?android:attr/textAppearance"
