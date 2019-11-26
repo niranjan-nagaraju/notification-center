@@ -190,6 +190,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                     /** Show actions bar but only if there's atleast one action for the notification */
                     if (ntfcn_action[0].getText().length() != 0)
                         ntfcns_action_lyt.setVisibility(View.VISIBLE);
+                    else
+                        ntfcns_action_lyt.setVisibility(View.GONE);
 
                     /**
                      * Expanded view is exactly the same as un-expanded

@@ -48,6 +48,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Text;
+
 import java.util.HashMap;
 import java.util.ArrayList;
 
@@ -322,7 +324,7 @@ public class MainActivity extends AppCompatActivity
         removedItems = new ArrayList<Integer>();
 
         counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
-        counterTv.setText("");
+        counterTv.setVisibility(View.GONE);
 
 
         // TODO: START runThread(); to be an UI update thread
@@ -360,10 +362,7 @@ public class MainActivity extends AppCompatActivity
             Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
             /** Update active count label */
-            if (num_active > 99)
-                counterTv.setText(String.valueOf(99) + "+");
-            else
-                counterTv.setText(String.valueOf(num_active));
+            updateActiveCount(counterTv, num_active);
 
             Toolbar toolbar = findViewById(R.id.toolbar);
 
@@ -672,6 +671,18 @@ public class MainActivity extends AppCompatActivity
         doUnbindService();
     }
 
+    private void updateActiveCount(TextView counter, int num_active) {
+        if (num_active == 0) {
+            counter.setVisibility(View.GONE);
+            return;
+        }
+        counter.setVisibility(View.VISIBLE);
+        if (num_active > 99)
+            counter.setText(String.valueOf(99) + "+");
+        else
+            counter.setText(String.valueOf(num_active));
+    }
+
 
     private class RefreshCardsAsyncTask extends AsyncTask<Void, Void, Void> {
         @Override
@@ -724,10 +735,8 @@ public class MainActivity extends AppCompatActivity
                 int num_active = mBoundService.get_active_count();
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
-                if (num_active > 99)
-                    counterTv.setText(String.valueOf(99) + "+");
-                else
-                    counterTv.setText(String.valueOf(num_active));
+
+                updateActiveCount(counterTv, num_active);
 
                 recyclerView.setAdapter(mBoundService.getAdapter());
                 mBoundService.getAdapter().notifyDataSetChanged();

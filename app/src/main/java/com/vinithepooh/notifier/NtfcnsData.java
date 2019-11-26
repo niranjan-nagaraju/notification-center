@@ -394,6 +394,21 @@ public class NtfcnsData {
     }
 
 
+
+    /** Get active notifications currently in the hash map */
+    public int getActiveCount() {
+        int active_count = 0;
+
+        for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
+            /** Notification's status is active */
+            if (entry.getValue().isActive())
+                active_count++;
+        }
+
+        return active_count;
+    }
+
+
     /**
      * Mark a previously-stored status bar notification as inactive
      * if it's already there in the table

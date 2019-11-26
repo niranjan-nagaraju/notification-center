@@ -287,7 +287,6 @@ public class NLService extends NotificationListenerService {
          * Initially mark everything in notifications table as inactive
          */
         ntfcn_items.markAllInactive();
-        int active_items = 0;
 
         for (StatusBarNotification asbn : getActiveNotifications()) {
             StatusBarNotification sbn = asbn.clone();
@@ -309,9 +308,7 @@ public class NLService extends NotificationListenerService {
                 /** Add a new active notification entry or
                  * just mark it as active if it already exists
                  */
-                if (addActiveSBN(sbn)) {
-                    active_items ++;
-                }
+                addActiveSBN(sbn);
 
                 /**
 
@@ -367,7 +364,7 @@ public class NLService extends NotificationListenerService {
             }
         }
 
-        this.num_active = active_items;
+        this.num_active = ntfcn_items.getActiveCount();
 
         /** Update active notifications count in persistent notification */
         pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
