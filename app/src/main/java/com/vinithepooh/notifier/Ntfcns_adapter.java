@@ -301,6 +301,9 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         try {
             final Notification ntfcn = sbn.getNotification();
 
+            if (NotificationCompat.getActionCount(ntfcn) == 0)
+                ntfcns_action_lyt.setVisibility(View.GONE);
+
             for (int i =0; i < NotificationCompat.getActionCount(ntfcn); i++) {
                 final NotificationCompat.Action action = NotificationCompat.getAction(ntfcn, i);
 
