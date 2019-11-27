@@ -47,6 +47,13 @@ public class NLService extends NotificationListenerService {
     private NotificationCompat.Builder pnotif_builder;
     private NotificationManager notificationManager;
 
+    public boolean isSync_in_progress() {
+        return sync_in_progress;
+    }
+
+    /** flag to indicate if sync is in progress on any thread */
+    private boolean sync_in_progress = false;
+
 
     public class NLBinder extends Binder {
         NLService getService() {
@@ -130,16 +137,26 @@ public class NLService extends NotificationListenerService {
 
                         if (System.currentTimeMillis() > time_last_pruned + 60*1000) {
                             Log.i(debug_tag, "Pruning old entries");
-                            ntfcn_items.prune();
 
-                            time_last_pruned = System.currentTimeMillis();
+                            if (sync_in_progress) {
+                                /** If a sync is in progress, skip this prune */
+                                Log.i(TAG, "Sync in progress, skipping prune");
+                            } else {
+                                ntfcn_items.prune();
+
+                                time_last_pruned = System.currentTimeMillis();
+                            }
                         }
 
                         /** Resync active notifications every 5 minutes */
                         if (System.currentTimeMillis() > time_since_last_resync + 5*60*1000) {
                             time_since_last_resync = System.currentTimeMillis();
-                            Log.i(TAG, "Resync in progress!");
-                            sync_notifications();
+                            if (!sync_in_progress) {
+                                Log.i(TAG, "Resync in progress!");
+                                sync_notifications();
+                            } else {
+                                Log.i(TAG, "Another sync already in progress");
+                            }
                         }
                     } catch (Exception e) {
                         Log.e(debug_tag, "Error in service thread" + e.getMessage());
@@ -254,6 +271,9 @@ public class NLService extends NotificationListenerService {
          * and prune hasnt been run for 30 minutes
          * try pruning in current thread
          */
+        if (sync_in_progress)
+            return;
+
         if(System.currentTimeMillis() > time_last_pruned+30*60*1000) {
             Log.i(TAG,"Prune thread has been inactive for over 30 minutes, pruning in main thread");
             ntfcn_items.prune();
@@ -283,6 +303,7 @@ public class NLService extends NotificationListenerService {
     public void sync_notifications() {
         Log.i(TAG,"**********  sync_notifications");
 
+        sync_in_progress = true;
         /**
          * Initially mark everything in notifications table as inactive
          */
@@ -365,6 +386,7 @@ public class NLService extends NotificationListenerService {
         }
 
         this.num_active = ntfcn_items.getActiveCount();
+        sync_in_progress = false;
 
         /** Update active notifications count in persistent notification */
         pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));

@@ -358,7 +358,17 @@ public class MainActivity extends AppCompatActivity
                 return;
             }
 
-            mBoundService.sync_notifications();
+            /**
+             * If another sync is already in progress,
+             * wait till it completes and
+             * use its results
+             */
+            if (mBoundService.isSync_in_progress()) {
+                Log.i(TAG, "Another sync already in progress");
+                while (mBoundService.isSync_in_progress() != true);
+            } else {
+                mBoundService.sync_notifications();
+            }
 
             int num_active = mBoundService.get_active_count();
             Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
@@ -456,12 +466,6 @@ public class MainActivity extends AppCompatActivity
         }
 
         private void handleCardClick(View v) {
-            TextView textViewApps = v.findViewById(R.id.textViewAppName);
-            TextView textViewNtfcnsBigText = v.findViewById(R.id.textViewntfcnBigText);
-            TextView textViewNtfcns = v.findViewById(R.id.textViewntfcn);
-            ImageView imageViewBigPicture = v.findViewById(R.id.imageViewBigPicture);
-
-            LinearLayout top_card_layout = v.findViewById(R.id.top_card_layout);
             LinearLayout group_card_layout = v.findViewById(R.id.group_card_layout);
             int listposition = recyclerView.getChildAdapterPosition(v);
 
@@ -701,7 +705,17 @@ public class MainActivity extends AppCompatActivity
 
                 Log.i(TAG, "Service bound - updating cards");
 
-                mBoundService.sync_notifications();
+                /**
+                 * If another sync is already in progress,
+                 * wait till it completes and
+                 * use its results
+                 */
+                if (mBoundService.isSync_in_progress()) {
+                    Log.i(TAG, "Another sync already in progress");
+                    while (mBoundService.isSync_in_progress() != true);
+                } else {
+                    mBoundService.sync_notifications();
+                }
 
                 /**
                  * if search box is up, and has some search string
