@@ -216,10 +216,12 @@ public class MainActivity extends AppCompatActivity
                     String searchString = editSearchText.getText().toString();
 
                     editSearchText.clearFocus();
+                    /**
                     Snackbar.make(findViewById(android.R.id.content), "searching for: " +
                                     searchString,
                             Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
+                     */
 
                     performSearch(searchString);
                     return true;
@@ -727,6 +729,9 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         protected void onPreExecute() {
+            Toast.makeText(getApplicationContext(),
+                    "Refreshing notifications",
+                    Toast.LENGTH_LONG).show();
         }
 
         @Override
@@ -749,6 +754,9 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         protected void onProgressUpdate(Void... values) {
+            Toast.makeText(getApplicationContext(),
+                    "Refreshing notifications",
+                    Toast.LENGTH_LONG).show();
         }
 
         @Override

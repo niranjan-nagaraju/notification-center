@@ -26,6 +26,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -383,6 +384,9 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                     Log.e(TAG, "Error in remote input: " +
                                             e.getMessage());
                                 }
+                                Toast.makeText(v.getContext().getApplicationContext(),
+                                                "remote input sent",
+                                        Toast.LENGTH_LONG).show();
                                 return true;
                             }
                             return false;
@@ -439,6 +443,9 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                         Log.e(TAG, "Error in remote input: " +
                                                 e.getMessage());
                                     }
+                                    Toast.makeText(v.getContext().getApplicationContext(),
+                                            "remote input sent",
+                                            Toast.LENGTH_LONG).show();
                                     return true;
                                 }
                             }
