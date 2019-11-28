@@ -20,12 +20,10 @@
 
             <EditText
                 android:id="@+id/editSearchText"
-                android:padding="5dip"
+                android:padding="8dip"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/rounded_edittext"
-                android:backgroundTint="?attr/colorPrimaryDark"
-                android:backgroundTintMode="src_atop"
                 android:cursorVisible="true"
                 android:ems="10"
                 android:hint=" Search"
