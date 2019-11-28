@@ -238,7 +238,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         if (dataSet.get(listPosition).getAppIcon() != null) {
             imageViewAppIcon.setImageDrawable(dataSet.get(listPosition).getAppIcon());
         } else {
-            imageViewBigPicture.setImageResource(0);
+            imageViewAppIcon.setImageResource(0);
         }
 
         textViewApp.setText(dataSet.get(listPosition).getApp_name());
