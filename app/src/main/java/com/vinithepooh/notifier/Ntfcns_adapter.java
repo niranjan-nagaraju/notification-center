@@ -29,6 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 
 /**
@@ -507,9 +508,11 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                         @Override
                         public void onClick(View v) {
                             Intent intent = new Intent();
+                            intent.setAction(Long.toString(System.currentTimeMillis()));
 
                             try {
-                                action.actionIntent.send(v.getContext().getApplicationContext(), 0, intent);
+                                action.actionIntent.send(v.getContext().getApplicationContext(), new Random().nextInt(),
+                                        intent);
                             } catch (PendingIntent.CanceledException e) {
                                 Log.e(TAG, "Exception executing action: " +
                                         e.getMessage());
@@ -525,9 +528,11 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                 @Override
                 public void onClick(View v) {
                     Intent intent = new Intent();
+                    intent.setAction(Long.toString(System.currentTimeMillis()));
 
                     try {
-                        ntfcn.contentIntent.send(v.getContext().getApplicationContext(), 0, intent);
+                        ntfcn.contentIntent.send(v.getContext().getApplicationContext(), new Random().nextInt(),
+                                intent);
                     } catch (PendingIntent.CanceledException e) {
                         Log.e(TAG, "Exception executing open action: " +
                                 e.getMessage());

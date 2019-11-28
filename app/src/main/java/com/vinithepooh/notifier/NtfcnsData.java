@@ -292,7 +292,7 @@ public class NtfcnsData {
      */
     public boolean addActive(String key, StatusBarNotification sbn) {
         if (this.ntfcns_table.containsKey(key)) {
-            StatusBarNotification sbn_c = sbn.clone();
+            StatusBarNotification sbn_c = sbn;
             this.ntfcns_table.get(key).setSBN(sbn_c);
             this.ntfcns_table.get(key).setActive(true);
 
@@ -418,7 +418,7 @@ public class NtfcnsData {
      */
     public boolean addInactive(String key, StatusBarNotification sbn) {
         if (this.ntfcns_table.containsKey(key)) {
-            StatusBarNotification sbn_c = sbn.clone();
+            StatusBarNotification sbn_c = sbn;
             this.ntfcns_table.get(key).setSBN(sbn_c);
             this.ntfcns_table.get(key).setActive(false);
 
