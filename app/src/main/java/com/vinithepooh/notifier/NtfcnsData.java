@@ -253,7 +253,8 @@ public class NtfcnsData {
                     text,
                     bigtext,
                     big_icon,
-                    big_picture
+                    big_picture,
+                    false  /** notifications are collapsed by default */
             ));
         }
 

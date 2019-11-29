@@ -471,16 +471,14 @@ public class MainActivity extends AppCompatActivity
 
             /** This is a group-heading card */
             if (group_card_layout.getVisibility() == View.VISIBLE) {
-                final int expanded = 0;
-                final int collapsed = 1;
                 TextView textViewPlaceholder = (TextView) v.findViewById(R.id.textViewPlaceholder);
                 Log.i(TAG, "Clicked on group header: " +  textViewPlaceholder.getText().toString());
 
-                if (textViewPlaceholder.getTag() == null)
-                    textViewPlaceholder.setTag(expanded);
-
                 try {
-                    if ((int)textViewPlaceholder.getTag() == expanded) {
+                    ArrayList<NtfcnsDataModel> dataSet = ((Ntfcns_adapter)recyclerView.getAdapter()).getDataSet();
+
+                    boolean expanded = dataSet.get(recyclerView.getChildAdapterPosition(v)).isExpanded();
+                    if (expanded) {
                         Log.i(TAG, "Collapse view: " + listposition);
 
                         int num_removed = mBoundService.collapse_group(listposition);
@@ -489,8 +487,8 @@ public class MainActivity extends AppCompatActivity
 
                         Log.i(TAG, "Collapsed view from: " + (listposition+1) + " entries: " +
                                 (num_removed));
+                        dataSet.get(recyclerView.getChildAdapterPosition(v)).setExpanded(false);
 
-                        textViewPlaceholder.setTag(collapsed);
                         textViewPlaceholder.setCompoundDrawablesWithIntrinsicBounds(
                                 R.drawable.arrow_right_48px, 0, 0, 0);
                     } else {
@@ -509,7 +507,8 @@ public class MainActivity extends AppCompatActivity
                         Log.i(TAG, "Expanded view from: " + (listposition+1) + " entries: " +
                                 (num_added));
 
-                        textViewPlaceholder.setTag(expanded);
+                        dataSet.get(recyclerView.getChildAdapterPosition(v)).setExpanded(true);
+
                         textViewPlaceholder.setCompoundDrawablesWithIntrinsicBounds(
                                 R.drawable.arrow_down_48px, 0, 0, 0);
                     }

@@ -415,7 +415,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         adapter = new Ntfcns_adapter(active);
@@ -437,7 +438,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         ArrayList inactive = ntfcn_items.filter_inactive("");
@@ -455,7 +457,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         all.addAll(inactive);
@@ -479,7 +482,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         adapter = new Ntfcns_adapter(active);
@@ -500,7 +504,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         ArrayList inactive = ntfcn_items.filter_inactive(searchKey);
@@ -517,7 +522,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         all.addAll(inactive);

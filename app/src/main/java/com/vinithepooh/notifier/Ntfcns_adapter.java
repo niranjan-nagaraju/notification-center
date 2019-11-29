@@ -170,9 +170,10 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
             public void onClick(View view) {
                 Log.i(TAG, "Clicked header");
 
-
                 /** Toggle big text and un-expanded text on card click */
-                if(textViewNtfcns.getVisibility() == View.GONE) {
+                if (dataSet.get(listPosition).isExpanded()) {
+                    dataSet.get(listPosition).setExpanded(false);
+
                     textViewNtfcnsBigText.setVisibility(View.GONE);
                     textViewNtfcns.setVisibility(View.VISIBLE);
                     imageViewBigPicture.setVisibility(View.GONE);
@@ -182,7 +183,10 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
                     /** Hide remote text input */
                     editTextRemoteInput.setVisibility(View.GONE);
+
                 } else {
+                    dataSet.get(listPosition).setExpanded(true);
+
                     textViewNtfcnsBigText.setVisibility(View.VISIBLE);
                     textViewNtfcns.setVisibility(View.GONE);
                     if(imageViewBigPicture.getDrawable() != null) {
@@ -543,6 +547,43 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         } catch (Exception e) {
             Log.e(TAG, "Exception occurred while getting actions" +
                     e.getMessage());
+        }
+
+        /** Set expanded or un-expanded view */
+        if (dataSet.get(listPosition).isExpanded() == false) {
+            textViewNtfcnsBigText.setVisibility(View.GONE);
+            textViewNtfcns.setVisibility(View.VISIBLE);
+            imageViewBigPicture.setVisibility(View.GONE);
+
+            /** Hide actions bar */
+            ntfcns_action_lyt.setVisibility(View.GONE);
+
+            /** Hide remote text input */
+            editTextRemoteInput.setVisibility(View.GONE);
+
+        } else {
+            textViewNtfcnsBigText.setVisibility(View.VISIBLE);
+            textViewNtfcns.setVisibility(View.GONE);
+            if(imageViewBigPicture.getDrawable() != null) {
+                imageViewBigPicture.setVisibility(View.VISIBLE);
+            }
+
+            /** Show actions bar but only if there's atleast one action for the notification */
+            if (ntfcn_action[0].getText().length() != 0)
+                ntfcns_action_lyt.setVisibility(View.VISIBLE);
+            else
+                ntfcns_action_lyt.setVisibility(View.GONE);
+
+            /**
+             * Expanded view is exactly the same as un-expanded
+             * Treat it as a regular card click and open the notification
+             */
+            if (textViewNtfcns.getText().equals(textViewNtfcnsBigText.getText()) &&
+                    imageViewBigPicture.getDrawable() == null &&
+                    ntfcns_action_lyt.getVisibility() != View.VISIBLE) {
+
+                ntfcn_open_action.performClick();
+            }
         }
 
         /** Autolink prevents card view onclick() from working, add an explicit listener */
