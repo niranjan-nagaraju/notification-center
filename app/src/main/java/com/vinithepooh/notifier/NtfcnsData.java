@@ -217,7 +217,28 @@ public class NtfcnsData {
                                              boolean active,
                                              Comparator<NtfcnsDataModel> comparator) {
         ArrayList<NtfcnsDataModel> data = new ArrayList<>();
+        String[] searchKeys = null;
 
+        searchKey = searchKey.trim();
+
+        if (searchKey.equals("")) {
+            searchKeys = new String[] {""};
+        } else {
+            StringBuilder sb = new StringBuilder(searchKey);
+
+            /** If search string had " " in them, remove them for a full word search */
+            if (sb.charAt(0) == '"' && sb.charAt(sb.length() - 1) == '"') {
+                sb.deleteCharAt(0);
+                sb.deleteCharAt(sb.length() - 1);
+                searchKeys = new String[] {sb.toString()};
+            } else {
+                searchKeys = searchKey.split("\\s+");
+            }
+        }
+
+        for (String s: searchKeys) {
+            Log.i(TAG, "Search words: " + s);
+        }
 
         for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
             String key = entry.getKey();
@@ -226,9 +247,19 @@ public class NtfcnsData {
             if (entry.getValue().isActive() != active)
                 continue;
 
-            /** match search string */
-            if (!key.toLowerCase().contains(searchKey.toLowerCase()))
-                continue;
+            /** skip search if the search string is empty, and list everything */
+            if (searchKeys[0].length() != 0) {
+                /** match all words in search string individually */
+                boolean match = true;
+                for (String s : searchKeys) {
+                    match = match && key.toLowerCase().contains(s.toLowerCase());
+                    if (!match)
+                        break;
+                }
+
+                if (!match)
+                    continue;
+            }
 
             StatusBarNotification sbn = entry.getValue().get_sbn();
             String app_name = entry.getValue().getApp_name();
