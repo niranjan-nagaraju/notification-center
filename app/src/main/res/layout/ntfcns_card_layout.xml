@@ -15,6 +15,7 @@
     app:cardCornerRadius="10dp"
     app:cardElevation="2dp"
     app:cardMaxElevation="3dp"
+    android:animateLayoutChanges="true"
     app:cardPreventCornerOverlap="false"
     app:cardUseCompatPadding="true"
     app:contentPadding="10dp">
