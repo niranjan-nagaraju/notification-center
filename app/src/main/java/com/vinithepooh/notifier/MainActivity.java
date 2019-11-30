@@ -9,6 +9,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.os.AsyncTask;
@@ -17,6 +18,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NotificationCompat;
@@ -79,6 +81,7 @@ public class MainActivity extends AppCompatActivity
     private static EditText editSearchText;
 
     private SwipeRefreshLayout swipeLayout;
+    private static CoordinatorLayout clayout;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -160,6 +163,8 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         });
+
+        clayout = findViewById(R.id.clayout);
 
 
         /** floating search button */
@@ -308,9 +313,19 @@ public class MainActivity extends AppCompatActivity
         } else {
             //service is not enabled try to enabled by calling...
             Log.i(TAG,"hasNotificationAccess NO");
-            Snackbar.make(findViewById(android.R.id.content), APP_NAME + " does not have notification access, Enable from settings",
-                    Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
+            Snackbar snackbar = Snackbar.make(clayout,
+                    APP_NAME + " does not have notification access, Enable from settings",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackbar.setAction("OKAY", new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent=new Intent(
+                            "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                    startActivity(intent);
+                }
+            });
+            snackbar.setActionTextColor(Color.YELLOW);
+            snackbar.show();
             Toast.makeText(getApplicationContext(), APP_NAME + " does not have notification access, Enable from settings",
                     Toast.LENGTH_LONG).show();
         }
@@ -459,6 +474,7 @@ public class MainActivity extends AppCompatActivity
                 //Log.(TAG, "pos: " + recyclerView.getChildAdapterPosition(v));
                 Log.i(TAG, "Card app: " +
                         dataSet.get(recyclerView.getChildAdapterPosition(v)).getApp_name());
+
                 handleCardClick(v);
             } catch (Exception e) {
                 Log.e(TAG, "Error getting child position: " + e.getMessage());

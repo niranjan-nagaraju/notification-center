@@ -105,7 +105,7 @@ public class NLService extends NotificationListenerService {
          PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
          pnotif_builder = new NotificationCompat.Builder(this, "notifier")
-         .setSmallIcon(R.mipmap.ic_launcher_round)
+         .setSmallIcon(R.mipmap.ic_launcher)
          .setContentTitle("Notifications Center")
          .setContentText("Active Notifications: NA")
          .setSubText("caching notifications")
