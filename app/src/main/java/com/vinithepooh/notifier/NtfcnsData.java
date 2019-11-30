@@ -37,6 +37,9 @@ public class NtfcnsData {
         Bitmap big_picture = null;
 
 
+        long cleared_time = 0;
+
+
         public NtfcnDataItem(StatusBarNotification sbn,
                              boolean active,
                              String app_name,
@@ -58,6 +61,7 @@ public class NtfcnsData {
             this.app_icon = app_icon;
             this.big_icon = big_icon;
             this.big_picture = big_picture;
+            this.cleared_time = 0;
         }
 
 
@@ -109,6 +113,15 @@ public class NtfcnsData {
 
         public Bitmap getBig_picture() {
             return big_picture;
+        }
+
+
+        public long getCleared_time() {
+            return cleared_time;
+        }
+
+        public void setCleared_time(long cleared_time) {
+            this.cleared_time = cleared_time;
         }
     }
 
@@ -454,6 +467,9 @@ public class NtfcnsData {
             this.ntfcns_table.get(key).setSBN(sbn_c);
             this.ntfcns_table.get(key).setActive(false);
 
+            /** Set cleared time as now, so we can track expiration timeout from here */
+            this.ntfcns_table.get(key).setCleared_time(System.currentTimeMillis());
+
             /**
              * If large icon wasnt available earlier,
              * check if the new clone has it,
@@ -494,15 +510,12 @@ public class NtfcnsData {
                 continue;
 
             String key = entry.getKey();
-            StatusBarNotification sbn = entry.getValue().get_sbn();
-
             /**
-             * remove entries older than 2 hours
+             * remove entries older than 'expiration time' hours
              * from the time they have been 'cleared'
              * TODO: make this 'interval' configurable
-             * TODO: Store cleared time instead of sbn post time
              */
-            if (current > (sbn.getPostTime() + expire_after)) {
+            if (current > (entry.getValue().getCleared_time() + expire_after)) {
                 Log.i(TAG, "Pruning entry with key: " + key);
                 iter.remove();
                 changed = true;
