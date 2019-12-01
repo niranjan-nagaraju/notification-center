@@ -155,7 +155,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onRefresh() {
                 swipeLayout.setRefreshing(true);
-                if(in_search) {
+                if (!editSearchText.getText().toString().isEmpty()) {
                     performSearch(editSearchText.getText().toString());
                     swipeLayout.setRefreshing(false);
                 } else {
@@ -192,17 +192,10 @@ public class MainActivity extends AppCompatActivity
                     String searchString = editSearchText.getText().toString();
 
                     editSearchText.clearFocus();
-                    /**
-                    Snackbar.make(findViewById(android.R.id.content), "searching for: " +
-                                    searchString,
-                            Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show(); */
 
                     Toast.makeText(getApplicationContext(), "searching for: " + searchString,
                             Toast.LENGTH_LONG).show();
 
-                    /** clear text for future searches */
-                    editSearchText.setText("");
                     performSearch(searchString);
                 } else {
                     /**
@@ -210,6 +203,10 @@ public class MainActivity extends AppCompatActivity
                      */
                     editSearchText.setVisibility(View.VISIBLE);
                     editSearchText.requestFocus();
+
+                    /** Show keyboard when fab is clicked and input is empty */
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
                 }
             }
         });
@@ -221,12 +218,9 @@ public class MainActivity extends AppCompatActivity
                     String searchString = editSearchText.getText().toString();
 
                     editSearchText.clearFocus();
-                    /**
-                    Snackbar.make(findViewById(android.R.id.content), "searching for: " +
-                                    searchString,
-                            Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                     */
+
+                    Toast.makeText(getApplicationContext(), "searching for: " + searchString,
+                            Toast.LENGTH_LONG).show();
 
                     performSearch(searchString);
                     return true;
@@ -240,12 +234,10 @@ public class MainActivity extends AppCompatActivity
             public void onFocusChange(View v, boolean hasFocus) {
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (hasFocus) {
-                    // show keyboard on focus
-                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+                    // Do nothing on focus
+                    //imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
                 } else {
-                    // hide searchbox
-                    editSearchText.setVisibility(View.GONE);
-                    // hide keyboard
+                    // hide keyboard when searchbox is not in focus
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                 }
             }
@@ -261,6 +253,7 @@ public class MainActivity extends AppCompatActivity
                 if (keyCode == KeyEvent.KEYCODE_BACK) {
                     editSearchText.clearFocus();
                     editSearchText.setVisibility(View.GONE);
+                    editSearchText.setText("");
 
 
                     /**
@@ -291,7 +284,9 @@ public class MainActivity extends AppCompatActivity
             public void afterTextChanged(Editable editable) {
                 Log.i(TAG, "Edit text changed");
                 String searchString = editSearchText.getText().toString();
-                performSearch(searchString);
+
+                if (!searchString.isEmpty())
+                    performSearch(searchString);
             }
         });
 
