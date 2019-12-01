@@ -385,6 +385,11 @@ public class NLService extends NotificationListenerService {
             }
         }
 
+        /**
+         * If there are entries previously marked inactive, but doesn't have its cleared time set,
+         * Set its cleared time to now
+         */
+        ntfcn_items.update_cleared_time_if_zero();
         this.num_active = ntfcn_items.getActiveCount();
         sync_in_progress = false;
 

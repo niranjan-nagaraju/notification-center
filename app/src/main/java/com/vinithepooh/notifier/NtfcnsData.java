@@ -222,6 +222,30 @@ public class NtfcnsData {
         }
     }
 
+    /**
+     * If there are entries previously marked inactive, but doesn't have its cleared time set,
+     * Set its cleared time to now
+     */
+    public void update_cleared_time_if_zero () {
+        Iterator<Map.Entry<String, NtfcnDataItem>> iter =
+                ntfcns_table.entrySet().iterator();
+
+        long now = System.currentTimeMillis();
+        while (iter.hasNext()) {
+            Map.Entry<String, NtfcnDataItem> entry = iter.next();
+
+            /**
+             * NOTE: This is needed for apps like Gmail
+             * which when 'deleted' update notification with an 'Undo'
+             * and null content, so notifier has no idea what the
+             * removed notification was for.
+             * Next sync, it'll be silently marked inactive, but its cleared time
+             * would remain 0. This readjusts such notifications.
+             */
+            if (!entry.getValue().isActive() && entry.getValue().cleared_time == 0)
+                entry.getValue().setCleared_time(now);
+        }
+    }
 
     /**
      * Filter notifications matching a search string and active status into a list
