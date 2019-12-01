@@ -700,7 +700,7 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private class RefreshCardsAsyncTask extends AsyncTask<Void, Void, Void> {
+    private class RefreshCardsAsyncTask extends AsyncTask<Void, String, Void> {
         @Override
         protected Void doInBackground(Void... voids) {
             try {
@@ -711,6 +711,7 @@ public class MainActivity extends AppCompatActivity
                 // to the notification manager
                 Log.i(TAG, "Waiting for listener to be connected...");
 
+                publishProgress("Waiting for listener to be connected...");
                 while(!mBoundService.isListenerConnected());
 
                 Log.i(TAG, "Service bound - updating cards");
@@ -726,6 +727,8 @@ public class MainActivity extends AppCompatActivity
                 } else {
                     mBoundService.sync_notifications();
                 }
+
+                publishProgress("Resyncing notification data");
 
                 /**
                  * if search box is up, and has some search string
@@ -755,7 +758,7 @@ public class MainActivity extends AppCompatActivity
         protected void onPreExecute() {
             Toast.makeText(getApplicationContext(),
                     "Refreshing notifications",
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -764,11 +767,14 @@ public class MainActivity extends AppCompatActivity
                 int num_active = mBoundService.get_active_count();
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
-
                 updateActiveCount(counterTv, num_active);
 
                 recyclerView.setAdapter(mBoundService.getAdapter());
                 mBoundService.getAdapter().notifyDataSetChanged();
+
+                Toast.makeText(getApplicationContext(),
+                        "Refresh completed.",
+                        Toast.LENGTH_LONG).show();
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -777,10 +783,10 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        protected void onProgressUpdate(Void... values) {
+        protected void onProgressUpdate(String... values) {
             Toast.makeText(getApplicationContext(),
-                    "Refreshing notifications",
-                    Toast.LENGTH_LONG).show();
+                    values[0],
+                    Toast.LENGTH_SHORT).show();
         }
 
         @Override
