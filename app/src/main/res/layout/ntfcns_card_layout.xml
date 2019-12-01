@@ -265,6 +265,8 @@
                         android:layout_marginTop="5dp"
                         android:autoLink="all"
                         android:textColor="@android:color/black"
+                        android:textColorHighlight="@android:color/holo_blue_light"
+                        android:textIsSelectable="true"
                         android:text="This is a test notification with a reallylongwordtotestwordbreaks\n blah..."
                         android:textAlignment="viewStart"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
@@ -278,6 +280,8 @@
                         android:layout_marginTop="5dp"
                         android:autoLink="all"
                         android:textColor="@android:color/black"
+                        android:textColorHighlight="@android:color/holo_blue_light"
+                        android:textIsSelectable="true"
                         android:text="This is an expanded test notification\n blah..."
                         android:textAlignment="viewStart"
                         android:textAppearance="?android:attr/textAppearanceSmall"
