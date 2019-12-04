@@ -227,6 +227,30 @@ public class NLService extends NotificationListenerService {
 
     }
 
+    /**
+     * Remove a notification entry from the table if cached
+     * Mark inactive if it was an active notification
+     */
+    public void remove(StatusBarNotification sbn) {
+        this.ntfcn_items.remove(sbn);
+    }
+
+
+    /**
+     * Clear all status bar notifications with matching condensed key (same content)
+     * NOTE: Since we de-dup, we have only one instance stored for each repeated
+     * status bar notification.
+     * So when a swipe to clear is attempted, we'll have to remove all duplicates
+     * from the status bar
+     */
+    public void clearAll(StatusBarNotification sbn) {
+        String key = this.ntfcn_items.getCondensedString(sbn);
+
+        for (StatusBarNotification asbn: getActiveNotifications()) {
+            if (ntfcn_items.getCondensedString(asbn).equals(key))
+                cancelNotification(asbn.getKey());
+        }
+    }
 
 
     /** Add a status bar notification from active notifications to the active table */
@@ -265,15 +289,18 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
+        Log.i(TAG, "SBN Key: " + sbn.getKey());
+
         addActiveSBN(sbn.clone());
+
+        if (sync_in_progress)
+            return;
+
 
         /** if prune/refresh thread has been killed for some reason,
          * and prune hasnt been run for 30 minutes
          * try pruning in current thread
          */
-        if (sync_in_progress)
-            return;
-
         if(System.currentTimeMillis() > time_last_pruned+30*60*1000) {
             Log.i(TAG,"Prune thread has been inactive for over 30 minutes, pruning in main thread");
             ntfcn_items.prune();
@@ -286,6 +313,8 @@ public class NLService extends NotificationListenerService {
         Log.i(TAG,"**********  onNotificationRemoved");
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
+
+        Log.i(TAG, "SBN Key: " + sbn.getKey());
 
         String condensed_string = ntfcn_items.getCondensedString(sbn);
         if ( ntfcn_items.addInactive(condensed_string, sbn) ) {

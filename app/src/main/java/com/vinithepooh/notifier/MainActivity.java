@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -28,6 +29,7 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.util.Linkify;
@@ -59,7 +61,7 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "bulletin_board";
-    private final String APP_NAME="Notifications Center";
+    private final String APP_NAME="Notifier";
     private long last_refresh_time = 0;
 
 
@@ -154,13 +156,7 @@ public class MainActivity extends AppCompatActivity
         swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                swipeLayout.setRefreshing(true);
-                if (!editSearchText.getText().toString().isEmpty()) {
-                    performSearch(editSearchText.getText().toString());
-                    swipeLayout.setRefreshing(false);
-                } else {
-                    refreshCards();
-                }
+                refreshCards();
             }
         });
 
@@ -311,7 +307,7 @@ public class MainActivity extends AppCompatActivity
             Snackbar snackbar = Snackbar.make(clayout,
                     APP_NAME + " does not have notification access, Enable from settings",
                     Snackbar.LENGTH_INDEFINITE);
-            snackbar.setAction("OKAY", new View.OnClickListener() {
+            snackbar.setAction("SETTINGS", new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     Intent intent=new Intent(
@@ -341,6 +337,8 @@ public class MainActivity extends AppCompatActivity
 
         // TODO: START runThread(); to be an UI update thread
         // checks active notifications, and updates current view every minute
+
+        enableSwipeToDeleteAndUndo();
     }
 
 
@@ -355,18 +353,6 @@ public class MainActivity extends AppCompatActivity
                 swipeLayout.setRefreshing(true);
 
             Log.i(TAG, "Refreshing cards!");
-
-            /** Refreshing cards on a search view should refresh current search results */
-            String searchString = editSearchText.getText().toString();
-            if (editSearchText.isFocused() &&
-                    !searchString.isEmpty()) {
-                performSearch(searchString);
-
-                if (swipeLayout.isRefreshing())
-                    swipeLayout.setRefreshing(false);
-
-                return;
-            }
 
             /**
              * If another sync is already in progress,
@@ -386,8 +372,24 @@ public class MainActivity extends AppCompatActivity
             /** Update active count label */
             updateActiveCount(counterTv, num_active);
 
-            Toolbar toolbar = findViewById(R.id.toolbar);
+            /** Refreshing cards on a search view should refresh current search results */
+            String searchString = editSearchText.getText().toString();
+            if (editSearchText.isFocused() &&
+                    !searchString.isEmpty()) {
+                performSearch(searchString);
 
+                if (swipeLayout.isRefreshing())
+                    swipeLayout.setRefreshing(false);
+
+                return;
+            }
+
+
+            /** Store last position in the current view */
+            int lastFirstVisiblePosition =
+                    ((LinearLayoutManager)recyclerView.getLayoutManager()).
+                            findFirstCompletelyVisibleItemPosition();
+            Toolbar toolbar = findViewById(R.id.toolbar);
 
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
@@ -410,6 +412,9 @@ public class MainActivity extends AppCompatActivity
             recyclerView.setAdapter(mBoundService.getAdapter());
             mBoundService.getAdapter().notifyDataSetChanged();
 
+            /** restore last position in the current view */
+            recyclerView.scrollToPosition(lastFirstVisiblePosition);
+
             if (swipeLayout.isRefreshing()) {
                 swipeLayout.setRefreshing(false);
             }
@@ -422,7 +427,6 @@ public class MainActivity extends AppCompatActivity
 
     private void performSearch(String searchKey) {
         try {
-            //mBoundService.sync_notifications();
             Log.i(TAG, "Searching for: " + searchKey);
 
             Toolbar toolbar = findViewById(R.id.toolbar);
@@ -534,26 +538,6 @@ public class MainActivity extends AppCompatActivity
             TextView ntfcn_open_action = v.findViewById(R.id.ntfcn_open_action);
             ntfcn_open_action.performClick();
         }
-
-        /**
-        private void removeItem(View v) {
-            int selectedItemPosition = recyclerView.getChildAdapterPosition(v);
-            RecyclerView.ViewHolder viewHolder
-                    = recyclerView.findViewHolderForLayoutPosition(selectedItemPosition);
-            TextView textViewApps
-                    = (TextView) viewHolder.itemView.findViewById(R.id.textViewAppName);
-            String selectedName = (String) textViewApps.getText();
-            int selectedItemId = -1;
-            for (int i = 0; i < SampleNotifications.pkg_names.length; i++) {
-                if (selectedName.equals(SampleNotifications.pkg_names[i])) {
-                    selectedItemId = SampleNotifications.id_[i];
-                }
-            }
-            removedItems.add(selectedItemId);
-            data.remove(selectedItemPosition);
-            adapter.notifyItemRemoved(selectedItemPosition);
-        }
-         */
     }
 
 
@@ -769,12 +753,22 @@ public class MainActivity extends AppCompatActivity
 
                 updateActiveCount(counterTv, num_active);
 
+
+                /** Store last position in the current view */
+                int lastFirstVisiblePosition =
+                        ((LinearLayoutManager)recyclerView.getLayoutManager()).
+                                findFirstCompletelyVisibleItemPosition();
+
                 recyclerView.setAdapter(mBoundService.getAdapter());
                 mBoundService.getAdapter().notifyDataSetChanged();
 
+                /** restore last position in the current view */
+                recyclerView.scrollToPosition(lastFirstVisiblePosition);
+
+
                 Toast.makeText(getApplicationContext(),
                         "Refresh completed.",
-                        Toast.LENGTH_LONG).show();
+                        Toast.LENGTH_SHORT).show();
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -796,5 +790,105 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onCancelled() {
         }
+    }
+
+
+    private void enableSwipeToDeleteAndUndo() {
+        SwipeToDelete swipeToDeleteCallback = new SwipeToDelete(this) {
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+
+                final int position = viewHolder.getAdapterPosition();
+                final Ntfcns_adapter adapter = (Ntfcns_adapter)recyclerView.getAdapter();
+                final NtfcnsDataModel item = adapter.getDataSet().get(position);
+                final boolean[] undo_clicked = new boolean[]{false};
+
+                Log.i(TAG, "Swiped position: " + position);
+
+                adapter.removeItem(position);
+
+                StringBuilder snackbar_text = new StringBuilder(item.app_name);
+                if (item.getNtfcn_active_status()) {
+                    snackbar_text.append(" notification removed from active list.");
+                } else {
+                    snackbar_text.append(" notification removed.");
+                }
+
+                Snackbar snackbar = Snackbar
+                        .make(clayout, snackbar_text.toString(),
+                                Snackbar.LENGTH_LONG);
+
+                snackbar.setAction("UNDO", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        undo_clicked[0] = true;
+                        adapter.restoreItem(item, position);
+                        //recyclerView.scrollToPosition(position);
+
+                        Log.i(TAG, "Restoring item at position: " + position);
+                    }
+                });
+
+                snackbar.setActionTextColor(Color.YELLOW);
+                snackbar.show();
+
+                snackbar.addCallback(new Snackbar.Callback() {
+                    /** Clear notification when snackbar is dismissed */
+                    @Override
+                    public void onDismissed(Snackbar snackbar, int event) {
+                        Log.i(TAG, "Position: " + position +
+                                " Snackbar dismissed - Undo? " + undo_clicked[0]);
+
+                        if (!undo_clicked[0]) {
+                            Log.i(TAG, "Undo wasn't clicked; remove notification for real");
+                            mBoundService.remove(item.getSbn());
+
+                            if (item.getNtfcn_active_status()) {
+                                // Active notification
+
+                                Log.i(TAG, "Active notification");
+
+                                /** Clear all notifications from the status bar matching card content */
+                                mBoundService.clearAll(item.getSbn());
+
+                                item.ntfcn_active_status = false;
+
+                                /**
+                                 * If we were in an all-notifications/search view
+                                 * Refresh cards so the cleared card appear
+                                 * in the cached list
+                                 * PS: This isnt needed in the active view because
+                                 * the card is anyway dismissed, and no UI cues are needed.
+                                 */
+                                if (currentNotificationsView !=
+                                        CurrentNotificationsView.TYPE_ACTIVE) {
+                                    refreshCards();
+                                }
+
+                                Toast.makeText(getApplicationContext(),
+                                        item.getApp_name() + " notification removed from active list.",
+                                        Toast.LENGTH_SHORT).show();
+                            } else {
+                                Log.i(TAG, "Cached notification");
+
+                                Toast.makeText(getApplicationContext(),
+                                        item.getApp_name() + " notification removed.",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onShown(Snackbar snackbar) {
+
+                    }
+                });
+
+
+            }
+        };
+
+        ItemTouchHelper itemTouchhelper = new ItemTouchHelper(swipeToDeleteCallback);
+        itemTouchhelper.attachToRecyclerView(recyclerView);
     }
 }

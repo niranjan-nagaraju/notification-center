@@ -401,7 +401,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                             e.getMessage());
                                 }
                                 Toast.makeText(v.getContext().getApplicationContext(),
-                                                "remote input sent",
+                                                "Text input sent",
                                         Toast.LENGTH_LONG).show();
                                 return true;
                             }
@@ -460,7 +460,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                                                 e.getMessage());
                                     }
                                     Toast.makeText(v.getContext().getApplicationContext(),
-                                            "remote input sent",
+                                            "Text input sent",
                                             Toast.LENGTH_LONG).show();
                                     return true;
                                 }
@@ -619,5 +619,15 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
     public ArrayList<NtfcnsDataModel> getDataSet() {
         return this.dataSet;
+    }
+
+    public void removeItem(int position) {
+        dataSet.remove(position);
+        notifyItemRemoved(position);
+    }
+
+    public void restoreItem(NtfcnsDataModel item, int position) {
+        dataSet.add(position, item);
+        notifyItemInserted(position);
     }
 }

@@ -350,6 +350,21 @@ public class NtfcnsData {
     }
 
 
+
+    /** Remove notification from the hash table */
+    public void remove(StatusBarNotification sbn) {
+        String key = getCondensedString(sbn);
+
+        if (this.ntfcns_table.get(key).isActive()) {
+            /** if the notification was active, mark it as cached and return */
+            this.addInactive(key, sbn);
+        } else {
+            /** if the notification was cached, remove it from the hash table */
+            this.ntfcns_table.remove(this.getCondensedString(sbn));
+        }
+    }
+
+
     /**
      * Add a status bar notification to the table
      * Mark it as active
