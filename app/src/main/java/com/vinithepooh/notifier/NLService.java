@@ -230,9 +230,13 @@ public class NLService extends NotificationListenerService {
     /**
      * Remove a notification entry from the table if cached
      * Mark inactive if it was an active notification
+     *
+     * NOTE: The card's active status is as seen in the view
+     *       and not from the dataset because they may no longer
+     *       be in sync.
      */
-    public void remove(StatusBarNotification sbn) {
-        this.ntfcn_items.remove(sbn);
+    public void remove(StatusBarNotification sbn, boolean active) {
+        this.ntfcn_items.remove(sbn, active);
     }
 
 
@@ -247,6 +251,12 @@ public class NLService extends NotificationListenerService {
         String key = this.ntfcn_items.getCondensedString(sbn);
 
         for (StatusBarNotification asbn: getActiveNotifications()) {
+            /** skip group headers
+            if ( ((asbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0)) {
+                Log.i(TAG, "skippiing group header key: " + asbn.getKey());
+                continue;
+             } */
+
             if (ntfcn_items.getCondensedString(asbn).equals(key))
                 cancelNotification(asbn.getKey());
         }
@@ -290,6 +300,12 @@ public class NLService extends NotificationListenerService {
                 + "\t" + sbn.getPackageName());
 
         Log.i(TAG, "SBN Key: " + sbn.getKey());
+        Log.i(TAG, "Flags: " +
+                ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0));
+
+        /** skip group headers */
+        if ( ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0))
+            return;
 
         addActiveSBN(sbn.clone());
 
@@ -355,13 +371,19 @@ public class NLService extends NotificationListenerService {
 
                 Log.i(TAG,"App name :" + app_name +  "\n");
 
+                /** skip group headers */
+                if ( ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0)) {
+                    Log.i(TAG, "skippiing group header key: " + sbn.getKey());
+                    continue;
+                }
+
                 /** Add a new active notification entry or
                  * just mark it as active if it already exists
                  */
                 addActiveSBN(sbn);
 
-                /**
 
+                /**
                 if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE).equals(
                         "android.app.Notification$MessagingStyle")
                         ) {
@@ -378,6 +400,8 @@ public class NLService extends NotificationListenerService {
                 }
 
 
+                Log.i(TAG, "Flags: " +
+                        ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0));
 
                     Log.i(TAG, "Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) + "\n");
                     Log.i(TAG, "Text :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) + "\n");
@@ -408,7 +432,6 @@ public class NLService extends NotificationListenerService {
                         Log.i(TAG, "Action :" + action.title + " Intent: " + action.actionIntent.toString() + "\n");
                     }
                  */
-
             } catch(Exception e) {
                 Log.e(TAG, "Exception occurred while syncing notifications: " + e.getMessage());
             }

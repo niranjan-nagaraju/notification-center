@@ -351,11 +351,17 @@ public class NtfcnsData {
 
 
 
-    /** Remove notification from the hash table */
-    public void remove(StatusBarNotification sbn) {
+    /**
+     * Remove a notification entry from the table if cached
+     * Mark inactive if it was an active notification
+     * NOTE: The card's active status is as seen in the view
+     *       and not from the dataset because they may no longer
+     *       be in sync.
+     */
+    public void remove(StatusBarNotification sbn, boolean active) {
         String key = getCondensedString(sbn);
 
-        if (this.ntfcns_table.get(key).isActive()) {
+        if (active) {
             /** if the notification was active, mark it as cached and return */
             this.addInactive(key, sbn);
         } else {

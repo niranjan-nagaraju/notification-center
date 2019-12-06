@@ -841,12 +841,13 @@ public class MainActivity extends AppCompatActivity
 
                         if (!undo_clicked[0]) {
                             Log.i(TAG, "Undo wasn't clicked; remove notification for real");
-                            mBoundService.remove(item.getSbn());
 
                             if (item.getNtfcn_active_status()) {
                                 // Active notification
 
                                 Log.i(TAG, "Active notification");
+
+                                mBoundService.remove(item.getSbn(), true);
 
                                 /** Clear all notifications from the status bar matching card content */
                                 mBoundService.clearAll(item.getSbn());
@@ -870,6 +871,8 @@ public class MainActivity extends AppCompatActivity
                                         Toast.LENGTH_SHORT).show();
                             } else {
                                 Log.i(TAG, "Cached notification");
+
+                                mBoundService.remove(item.getSbn(), false);
 
                                 Toast.makeText(getApplicationContext(),
                                         item.getApp_name() + " notification removed.",
