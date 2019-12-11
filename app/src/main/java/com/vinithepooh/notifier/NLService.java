@@ -446,9 +446,9 @@ public class NLService extends NotificationListenerService {
         this.num_active = ntfcn_items.getActiveCount();
         sync_in_progress = false;
 
-        /** Update active notifications count in persistent notification
-        pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
-        notificationManager.notify(01, pnotif_builder.build()); */
+        /** Update active notifications count in persistent notification */
+        pnotif_builder.setContentText("Tap to open Notifications Center");
+        notificationManager.notify(01, pnotif_builder.build());
     }
 
 
