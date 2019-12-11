@@ -9,6 +9,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -350,6 +351,10 @@ public class MainActivity extends AppCompatActivity
         counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
         counterTv.setVisibility(View.GONE);
 
+        SharedPreferences sp = getSharedPreferences("Mysharedprefs", MODE_PRIVATE);
+        app_menus_collapsed = sp.getBoolean("app_menus_collapsed", false);
+
+        Log.i(TAG, "Saved state: " + app_menus_collapsed);
 
         enableSwipeToDeleteAndUndo();
     }
@@ -628,6 +633,14 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStop() {
         super.onStop();
+
+        SharedPreferences sp = getSharedPreferences("Mysharedprefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+
+        Log.i(TAG, "Saving state: " + app_menus_collapsed);
+
+        editor.putBoolean("app_menus_collapsed", app_menus_collapsed);
+        editor.commit();
     }
 
 
