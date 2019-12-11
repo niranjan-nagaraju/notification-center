@@ -89,6 +89,7 @@ public class MainActivity extends AppCompatActivity
     private ConcurrentHashMap<MenuItem, String> menus_to_pkgs = new ConcurrentHashMap<>();
     private ArrayList<MenuItem> custom_menus = new ArrayList<>();
     private MenuItem submenu_header;
+    private boolean app_menus_collapsed = false;
 
     private static NLService mBoundService;
     private boolean mIsBound;
@@ -732,6 +733,18 @@ public class MainActivity extends AppCompatActivity
             }
         } else if (submenu_header == item) {
             Log.i(TAG, "Found submenu header, collapse/expand");
+            ImageView imgView = submenu_header.getActionView().findViewById(R.id.submenu_action_layout);
+            if (app_menus_collapsed) {
+                imgView.setImageResource(R.drawable.arrow_down_48px);
+                app_menus_collapsed = false;
+                new UpdateMenusAsyncTask().execute();
+            } else {
+                app_menus_collapsed = true;
+                imgView.setImageResource(R.drawable.arrow_right_48px);
+                for (Map.Entry<MenuItem, String> entry : menus_to_pkgs.entrySet())
+                    entry.getKey().setVisible(false);
+            }
+
             return true;
         } else {
             if (menus_to_pkgs.containsKey(item)) {
@@ -975,7 +988,13 @@ public class MainActivity extends AppCompatActivity
                     }
 
                     updateActiveCount((TextView)mi.getActionView(), active_count);
-                    mi.setVisible(true);
+
+                    /** Keep menuitems hidden if the group is collapsed */
+                    if (app_menus_collapsed) {
+                        mi.setVisible(false);
+                    } else {
+                        mi.setVisible(true);
+                    }
                     i++;
                 }
             } catch (Exception e) {
@@ -995,10 +1014,12 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         protected void onCancelled(Void aVoid) {
+            Log.i(TAG, "Cancelled params");
         }
 
         @Override
         protected void onCancelled() {
+            Log.i(TAG, "Cancelled..");
         }
 
     }
