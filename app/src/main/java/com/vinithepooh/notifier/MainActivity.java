@@ -351,32 +351,6 @@ public class MainActivity extends AppCompatActivity
 
 
         enableSwipeToDeleteAndUndo();
-
-
-        ((DrawerLayout) findViewById(R.id.drawer_layout)).addDrawerListener(new DrawerLayout.DrawerListener() {
-            @Override
-            public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
-                //Log.i(TAG, "Drawer slide!");
-            }
-
-            @Override
-            public void onDrawerOpened(@NonNull View drawerView) {
-                Log.i(TAG, "Drawer opened!");
-
-                new UpdateMenusAsyncTask().execute();
-            }
-
-            @Override
-            public void onDrawerClosed(@NonNull View drawerView) {
-                Log.i(TAG, "Drawer closed!");
-            }
-
-            @Override
-            public void onDrawerStateChanged(int newState) {
-                //Log.i(TAG, "Drawer state changed!");
-            }
-        });
-
     }
 
 
@@ -409,6 +383,8 @@ public class MainActivity extends AppCompatActivity
 
             /** Update active count label */
             updateActiveCount(counterTv, num_active);
+
+            new UpdateMenusAsyncTask().execute();
 
             /** Refreshing cards on a search view should refresh current search results */
             String searchString = editSearchText.getText().toString();
@@ -865,6 +841,8 @@ public class MainActivity extends AppCompatActivity
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
                 updateActiveCount(counterTv, num_active);
+
+                new UpdateMenusAsyncTask().execute();
 
                 /** Store last position in the current view */
                 int lastFirstVisiblePosition =
