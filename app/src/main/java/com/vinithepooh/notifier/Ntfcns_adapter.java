@@ -33,7 +33,7 @@ import java.util.Random;
 
 
 /**
- * Created by vinithepooh on 14/02/19.
+ * Created by Niranjan Nagaraju on 14/02/19.
  */
 
 public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHolder>{

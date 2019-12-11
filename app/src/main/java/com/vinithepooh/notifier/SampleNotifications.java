@@ -1,7 +1,7 @@
 package com.vinithepooh.notifier;
 
 /**
- * Created by vinithepooh on 15/02/19.
+ * Created by Niranjan Nagaraju on 15/02/19.
  */
 
 public class SampleNotifications {
