@@ -4,12 +4,20 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/colorPrimary"
-    android:gravity="bottom"
+    android:gravity="top"
     android:paddingBottom="8dp"
     android:paddingLeft="16dp"
     android:paddingRight="8dp"
     android:paddingTop="8dp"
+    android:orientation="vertical"
     android:theme="@style/ThemeOverlay.AppCompat.Dark">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
     <ImageView
         android:id="@+id/imageView"
@@ -37,10 +45,21 @@
         android:textSize="18sp"
         android:textStyle="bold" />
 
+    </LinearLayout>
     <!-- TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="android.studio@android.com" /-->
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:paddingBottom="8dp"
+        android:text="Better Notifications for Android"
+        android:textAlignment="gravity"
+        android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+        android:textSize="12sp"
+        android:textStyle="normal" />
 </LinearLayout>
