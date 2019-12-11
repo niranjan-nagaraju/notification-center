@@ -108,7 +108,7 @@ public class NLService extends NotificationListenerService {
          pnotif_builder = new NotificationCompat.Builder(this, "notifier")
          .setSmallIcon(R.mipmap.ic_launcher)
          .setContentTitle("Notifications Center")
-         .setContentText("Active Notifications: NA")
+         .setContentText("Tap to open Notifications Center")
          .setSubText("caching notifications")
          .setPriority(NotificationCompat.PRIORITY_LOW)
          .setAutoCancel(false)
@@ -446,9 +446,9 @@ public class NLService extends NotificationListenerService {
         this.num_active = ntfcn_items.getActiveCount();
         sync_in_progress = false;
 
-        /** Update active notifications count in persistent notification */
+        /** Update active notifications count in persistent notification
         pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
-        notificationManager.notify(01, pnotif_builder.build());
+        notificationManager.notify(01, pnotif_builder.build()); */
     }
 
 
