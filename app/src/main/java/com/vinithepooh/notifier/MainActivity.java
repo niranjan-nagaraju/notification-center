@@ -1108,7 +1108,7 @@ public class MainActivity extends AppCompatActivity
                                  */
                                 if (currentNotificationsView !=
                                         CurrentNotificationsView.TYPE_ACTIVE) {
-                                    refreshCards();
+                                    //refreshCards();
                                 }
 
                                 Toast.makeText(getApplicationContext(),
