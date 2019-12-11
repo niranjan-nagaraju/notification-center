@@ -24,6 +24,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.TreeMap;
 
 
 public class NLService extends NotificationListenerService {
@@ -546,6 +547,8 @@ public class NLService extends NotificationListenerService {
         adapter = new Ntfcns_adapter(active);
     }
 
+
+    /** Filter all notifications matching search key */
     public void filter_all(String searchKey) {
         ArrayList all = ntfcn_items.filter_active(searchKey);
         /** Add a group header */
@@ -587,6 +590,58 @@ public class NLService extends NotificationListenerService {
         adapter = new Ntfcns_adapter(all);
     }
 
+
+    /** Filter all notifications from package */
+    public void filter_apps(String pkg, String searchKey) {
+        ArrayList all = ntfcn_items.filter_active_app(pkg, searchKey);
+        /** Add a group header */
+        all.add(0, new NtfcnsDataModel(
+                null,
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true   /** groups are expanded by default */
+        ));
+
+        ArrayList inactive = ntfcn_items.filter_inactive_app(pkg, searchKey);
+        /** Add a group header */
+        inactive.add(0, new NtfcnsDataModel(
+                null,
+                "Cached Notifications",
+                null,
+                null,
+                null,
+                0,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true   /** groups are expanded by default */
+        ));
+
+        all.addAll(inactive);
+        adapter = new Ntfcns_adapter(all);
+    }
+
+
+
+    /**
+     * Build a list of packages from notifications sorted by their app name,
+     * and their active count
+     */
+    public TreeMap<String, Integer> build_apps_list() {
+        return this.ntfcn_items.build_apps_list();
+    }
 
     /** remove all items from [startposition] in adapter
      * as long as they have the same group headers

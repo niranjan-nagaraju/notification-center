@@ -1,6 +1,7 @@
 package com.vinithepooh.notifier;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -12,8 +13,10 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -247,6 +250,120 @@ public class NtfcnsData {
         }
     }
 
+
+    /**
+     * Filter notifications from a matching package
+     */
+    public ArrayList<NtfcnsDataModel> filter_app(String pkg,
+                                                 String searchKey,
+                                                 boolean active,
+                                                 Comparator<NtfcnsDataModel> comparator) {
+        ArrayList<NtfcnsDataModel> data = new ArrayList<>();
+        String[] searchKeys = null;
+
+        searchKey = searchKey.trim();
+
+        if (searchKey.equals("")) {
+            searchKeys = new String[] {""};
+        } else {
+            StringBuilder sb = new StringBuilder(searchKey);
+
+            /** If search string had " " in them, remove them for a full word search */
+            if (sb.charAt(0) == '"' && sb.charAt(sb.length() - 1) == '"') {
+                sb.deleteCharAt(0);
+                sb.deleteCharAt(sb.length() - 1);
+                searchKeys = new String[] {sb.toString()};
+            } else {
+                searchKeys = searchKey.split("\\s+");
+            }
+        }
+
+        for (String s: searchKeys) {
+            Log.i(TAG, "Search words: " + s);
+        }
+
+
+        for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
+            String key = entry.getKey();
+
+            /** Notification's active status doesn't match filter's active status */
+            if (entry.getValue().isActive() != active)
+                continue;
+
+            /** Notification's package names dont match */
+            if (!entry.getValue().sbn.getPackageName().equals(pkg))
+                continue;
+
+
+            /** skip search if the search string is empty, and list everything */
+            if (searchKeys[0].length() != 0) {
+                /** match all words in search string individually */
+                boolean match = true;
+                for (String s : searchKeys) {
+                    match = match && key.toLowerCase().contains(s.toLowerCase());
+                    if (!match)
+                        break;
+                }
+
+                if (!match)
+                    continue;
+            }
+
+            StatusBarNotification sbn = entry.getValue().get_sbn();
+            String app_name = entry.getValue().getApp_name();
+            String subtext = entry.getValue().getSubtext();
+            String title = entry.getValue().getTitle();
+            String text = entry.getValue().getText();
+            String bigtext = entry.getValue().getBigText();
+
+            Drawable app_icon = entry.getValue().getApp_icon();
+            Bitmap big_icon = entry.getValue().getBig_icon();
+            Bitmap big_picture = entry.getValue().getBig_picture();
+
+            data.add(new NtfcnsDataModel(
+                    sbn,
+                    (active ? "Active Notifications" : "Cached Notifications"),
+                    app_icon,
+                    app_name,
+                    subtext,
+                    sbn.getPostTime(),
+                    active,
+                    title,
+                    text,
+                    bigtext,
+                    big_icon,
+                    big_picture,
+                    false  /** notifications are collapsed by default */
+            ));
+        }
+
+        Collections.sort(data, comparator);
+
+        return data;
+    }
+
+
+    /**
+     * Filter all active notifications into a sorted list
+     * by default, sort by reverse chronological order based on post time.
+     */
+    public ArrayList<NtfcnsDataModel> filter_active_app(String pkg, String searchKey) {
+        return this.filter_app(pkg, searchKey, true, postTimeComparator);
+    }
+
+
+    /**
+     * Filter all inactive notifications into a sorted list
+     * by default, sort by reverse chronological order based on post time.
+     */
+    public ArrayList<NtfcnsDataModel> filter_inactive_app(String pkg, String searchKey) {
+        return this.filter_app(pkg, searchKey, false, postTimeComparator);
+    }
+
+
+
+
+
     /**
      * Filter notifications matching a search string and active status into a list
      */
@@ -349,6 +466,53 @@ public class NtfcnsData {
         return this.filter(searchKey, false, postTimeComparator);
     }
 
+
+    /**
+     * Build a list of packages from notifications sorted by their app name,
+     * and their active count
+     */
+    public TreeMap<String, Integer> build_apps_list() {
+        final PackageManager pm = context.getPackageManager();
+
+        Comparator<String> apps_name_comparator = new Comparator<String>() {
+            public int compare(String a1, String a2) {
+                try {
+                    String s1 = pm.getApplicationLabel(
+                            pm.getApplicationInfo(a1, PackageManager.GET_META_DATA)).toString();
+                    String s2 = pm.getApplicationLabel(
+                            pm.getApplicationInfo(a2, PackageManager.GET_META_DATA)).toString();
+
+                    return s1.compareToIgnoreCase(s2);
+                } catch (PackageManager.NameNotFoundException e) {
+                    return a1.compareToIgnoreCase(a2);
+                }
+            }
+        };
+
+        TreeMap<String, Integer> apps_list = new TreeMap<>(apps_name_comparator);
+
+        for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
+            String pkg = entry.getValue().sbn.getPackageName();
+            Boolean isActive = entry.getValue().isActive();
+
+            if (apps_list.containsKey(pkg)) {
+                Integer count = apps_list.get(pkg);
+
+                /** If the notification is active, Increase active count for pkg */
+                if (isActive)
+                    apps_list.put(pkg, count+1);
+            } else {
+                apps_list.put(pkg, 0);
+
+                /** If the notification is active, Increase active count for pkg */
+                if (isActive)
+                    apps_list.put(pkg, 1);
+            }
+
+        }
+
+        return  apps_list;
+    }
 
 
     /**
@@ -568,4 +732,5 @@ public class NtfcnsData {
         }
         return changed;
     }
+
 }

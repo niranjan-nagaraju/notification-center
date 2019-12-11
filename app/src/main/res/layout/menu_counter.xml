@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_menu_counter"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_marginTop="15dp"
@@ -14,5 +15,5 @@
     android:textColor="@android:color/white"
     android:textStyle="bold"
     android:background="@drawable/rounded_corner"
-    android:shape="oval"
+    android:shape="ring"
     />

@@ -9,12 +9,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
@@ -31,10 +33,15 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Editable;
+import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.text.util.Linkify;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.SubMenu;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -56,20 +63,33 @@ import org.w3c.dom.Text;
 
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static android.graphics.Typeface.BOLD;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "bulletin_board";
     private final String APP_NAME="Notifier";
+    private final int NUM_CUSTOM_MENUS = 50;
+
     private long last_refresh_time = 0;
 
 
     private @CurrentNotificationsView.CurrentViewMode int currentNotificationsView =
             CurrentNotificationsView.TYPE_ACTIVE;
+    private StringBuilder app_filter = new StringBuilder();
 
     // app names to menuitem references mapping
-    private HashMap<String, MenuItem> app_menus;
+    //private ConcurrentHashMap<String, MenuItem> pkgs_to_menus = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<MenuItem, String> menus_to_pkgs = new ConcurrentHashMap<>();
+    private ArrayList<MenuItem> custom_menus = new ArrayList<>();
+    private MenuItem submenu_header;
+
     private static NLService mBoundService;
     private boolean mIsBound;
 
@@ -286,7 +306,6 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -295,30 +314,27 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        navigationView.setItemIconTintList(null); // remove tints for icon in nav menus
 
-        if (Settings.Secure.getString(
-                this.getContentResolver(),
-                "enabled_notification_listeners").contains(getApplicationContext().getPackageName()))
-        {
-            Log.i(TAG,"hasNotificationAccess YES");
-        } else {
-            //service is not enabled try to enabled by calling...
-            Log.i(TAG,"hasNotificationAccess NO");
-            Snackbar snackbar = Snackbar.make(clayout,
-                    APP_NAME + " does not have notification access, Enable from settings",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackbar.setAction("SETTINGS", new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    Intent intent=new Intent(
-                            "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
-                    startActivity(intent);
-                }
-            });
-            snackbar.setActionTextColor(Color.YELLOW);
-            snackbar.show();
-            Toast.makeText(getApplicationContext(), APP_NAME + " does not have notification access, Enable from settings",
-                    Toast.LENGTH_LONG).show();
+        final Menu menu = navigationView.getMenu();
+        submenu_header = menu.findItem(R.id.nav_apps);
+        SpannableString ss = new SpannableString("App-wise Notifications");
+        ss.setSpan(new ForegroundColorSpan(Color.GRAY), 0, ss.length(), 0);
+        ss.setSpan(new StyleSpan(BOLD), 0, ss.length(), 0);
+        //ss.setSpan(new RelativeSizeSpan(1.2f), 0, ss.length(), 0);
+        submenu_header.setTitle(ss);
+
+        /** Create a bunch of menu items at start, and reuse as needed */
+
+        for (int i=0; i<NUM_CUSTOM_MENUS; i++) {
+            MenuItem mi = menu.add(R.id.nav_apps_grp,
+                    Menu.FIRST + i, Menu.FIRST+i, "");
+            mi.setCheckable(true);
+            mi.setActionView(R.layout.menu_counter);
+            mi.setVisible(false);
+
+            custom_menus.add(mi);
+            menus_to_pkgs.put(mi, "");
         }
 
         cardsOnClickListener = new CardsOnClickListener(this);
@@ -329,16 +345,38 @@ public class MainActivity extends AppCompatActivity
         layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
-        removedItems = new ArrayList<Integer>();
 
         counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
         counterTv.setVisibility(View.GONE);
 
 
-        // TODO: START runThread(); to be an UI update thread
-        // checks active notifications, and updates current view every minute
-
         enableSwipeToDeleteAndUndo();
+
+
+        ((DrawerLayout) findViewById(R.id.drawer_layout)).addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
+                //Log.i(TAG, "Drawer slide!");
+            }
+
+            @Override
+            public void onDrawerOpened(@NonNull View drawerView) {
+                Log.i(TAG, "Drawer opened!");
+
+                new UpdateMenusAsyncTask().execute();
+            }
+
+            @Override
+            public void onDrawerClosed(@NonNull View drawerView) {
+                Log.i(TAG, "Drawer closed!");
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+                //Log.i(TAG, "Drawer state changed!");
+            }
+        });
+
     }
 
 
@@ -404,9 +442,30 @@ public class MainActivity extends AppCompatActivity
                     mBoundService.filter_all();
                     break;
 
+                case CurrentNotificationsView.TYPE_APP:
+                    PackageManager pm = getPackageManager();
+                    String app_name;
+                    try {
+                        app_name = pm.getApplicationLabel(
+                                pm.getApplicationInfo(app_filter.toString(),
+                                        PackageManager.GET_META_DATA)).toString();
+                    } catch (PackageManager.NameNotFoundException e) {
+                        app_name = "Unknown";
+                    }
+
+                    Log.i(TAG, "Refreshing app view cards: " + app_filter);
+                    toolbar.setTitle(app_name + " Notifications");
+                    mBoundService.filter_apps(app_filter.toString(), "");
+                    break;
+
                 default:
                     Log.i(TAG, "Refreshing: NOOP!");
-                    break;
+
+                    // shouldn't be coming here at all
+                    // raise an exception for now
+                    // to signal something is wrong
+                    throw new NullPointerException();
+                    //break;
             }
 
             recyclerView.setAdapter(mBoundService.getAdapter());
@@ -440,9 +499,16 @@ public class MainActivity extends AppCompatActivity
                 case CurrentNotificationsView.TYPE_ALL:
                     mBoundService.filter_all(searchKey);
                     break;
+                case CurrentNotificationsView.TYPE_APP:
+                    mBoundService.filter_apps(app_filter.toString(), searchKey);
+                    break;
                 default:
                     Log.i(TAG, "Unknown current view: NOOP!");
-                    break;
+                    // shouldn't be coming here at all
+                    // raise an exception for now
+                    // to signal something is wrong
+                    throw new NullPointerException();
+                    //break;
             }
 
             recyclerView.setAdapter(mBoundService.getAdapter());
@@ -546,12 +612,37 @@ public class MainActivity extends AppCompatActivity
     public void onStart() {
         super.onStart();
 
-        /** refresh tasks on startup +
-         * every time the activity is back to focus but only if its been a while
-         */
-        if (System.currentTimeMillis() > last_refresh_time + 60*1000) {
-            new RefreshCardsAsyncTask().execute();
-            last_refresh_time = System.currentTimeMillis();
+        if (Settings.Secure.getString(
+                this.getContentResolver(),
+                "enabled_notification_listeners").contains(getApplicationContext().getPackageName()))
+        {
+            Log.i(TAG,"hasNotificationAccess YES");
+
+            /** refresh tasks on startup +
+             * every time the activity is back to focus but only if its been a while
+             */
+            if (System.currentTimeMillis() > last_refresh_time + 60*1000) {
+                new RefreshCardsAsyncTask().execute();
+                last_refresh_time = System.currentTimeMillis();
+            }
+        } else {
+            Log.i(TAG,"hasNotificationAccess NO");
+            Snackbar snackbar = Snackbar.make(clayout,
+                    APP_NAME + " does not have notification access, Enable from settings",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackbar.setAction("SETTINGS", new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent=new Intent(
+                            "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                    startActivity(intent);
+                }
+            });
+            snackbar.setActionTextColor(Color.YELLOW);
+            snackbar.show();
+            Toast.makeText(getApplicationContext(),
+                    APP_NAME + " does not have notification access, Enable from settings",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
@@ -559,7 +650,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onStop() {
-        //disconnect sqlite3 db etc
         super.onStop();
     }
 
@@ -577,6 +667,13 @@ public class MainActivity extends AppCompatActivity
              */
             if (in_search) {
                 in_search = false;
+                refreshCards();
+                return;
+            }
+
+            /** If we were in an app view, return to active notifications view */
+            if (currentNotificationsView == CurrentNotificationsView.TYPE_APP) {
+                currentNotificationsView = CurrentNotificationsView.TYPE_ACTIVE;
                 refreshCards();
                 return;
             }
@@ -657,6 +754,21 @@ public class MainActivity extends AppCompatActivity
                 Log.e(TAG, "Exception occurred while refreshing all notifications: " +
                         e.getMessage());
             }
+        } else if (submenu_header == item) {
+            Log.i(TAG, "Found submenu header, collapse/expand");
+            return true;
+        } else {
+            if (menus_to_pkgs.containsKey(item)) {
+                Log.i(TAG, "Found custom menu: " + menus_to_pkgs.get(item) +
+                        " ID: " + item.getItemId() +
+                        " Title: " + item.getTitle());
+
+                currentNotificationsView = CurrentNotificationsView.TYPE_APP;
+                toolbar.setTitle(item.getTitle() + " Notifications");
+                app_filter.setLength(0);
+                app_filter.append(menus_to_pkgs.get(item));
+                refreshCards();
+            }
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -667,6 +779,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         Log.i(TAG, "onDestroy()");
+
         super.onDestroy();
         doUnbindService();
     }
@@ -676,13 +789,13 @@ public class MainActivity extends AppCompatActivity
             counter.setVisibility(View.GONE);
             return;
         }
+
         counter.setVisibility(View.VISIBLE);
         if (num_active > 99)
             counter.setText(String.valueOf(99) + "+");
         else
             counter.setText(String.valueOf(num_active));
     }
-
 
     private class RefreshCardsAsyncTask extends AsyncTask<Void, String, Void> {
         @Override
@@ -733,7 +846,7 @@ public class MainActivity extends AppCompatActivity
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                Log.e(TAG, "Exception in Asynctask - Error: " + e.getMessage());
+                Log.e(TAG, "Exception in Refresh cards Asynctask - Error: " + e.getMessage());
             }
             return null;
         }
@@ -752,7 +865,6 @@ public class MainActivity extends AppCompatActivity
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
                 updateActiveCount(counterTv, num_active);
-
 
                 /** Store last position in the current view */
                 int lastFirstVisiblePosition =
@@ -793,7 +905,128 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private void enableSwipeToDeleteAndUndo() {
+
+    /** Async task to update navigation menus in the background when drawer is opened */
+    private class UpdateMenusAsyncTask extends AsyncTask<Void, String, Void> {
+        TreeMap<String, Integer> apps_list = null;
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                /** Wait if a sync is currently in progress */
+                while (mBoundService.isSync_in_progress());
+
+                apps_list = mBoundService.build_apps_list();
+            } catch (Exception e) {
+                Log.e(TAG, "Exception in Update Menus Asynctask - Error: " + e.getMessage());
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Log.i(TAG, "Updating Menus");
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid){
+            try {
+                PackageManager pm = getPackageManager();
+                NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+                Menu menu = navigationView.getMenu();
+
+                /** We need more menus */
+                if (apps_list.size() > custom_menus.size()) {
+                    for (int i = custom_menus.size(); i < apps_list.size(); i++) {
+                        MenuItem mi = menu.add(R.id.nav_apps_grp,
+                                Menu.FIRST + i, Menu.FIRST+i, "");
+                        mi.setCheckable(true);
+                        mi.setActionView(R.layout.menu_counter);
+                        mi.setVisible(true);
+
+                        custom_menus.add(mi);
+                        menus_to_pkgs.put(mi, "");
+                    }
+                } else {
+                    /** We have more menus than apps, hide unneeded ones */
+                    for (int i=custom_menus.size()-1; i>=apps_list.size(); i--) {
+                        custom_menus.get(i).setVisible(false);
+                    }
+                }
+
+                int i = 0;
+                for (Map.Entry<String, Integer> entry : apps_list.entrySet()) {
+                    String pkg = entry.getKey();
+                    Integer active_count = entry.getValue();
+
+                    Log.i(TAG, entry.getKey() + ": " + entry.getValue());
+
+                    MenuItem mi = custom_menus.get(i);
+
+                    /**
+                     * if menu corresponds to the same app
+                     * Just set active counter and return
+                     * else add appropriate title, and icon
+                     * and link menu to package name
+                     *
+                     * NOTE: we compare packaga names and not the app names
+                     * because app names might not be unique
+                     * e.g. Calendar
+                     */
+                    if (!menus_to_pkgs.get(mi).equals(pkg)) {
+                        String app_name = null;
+                        try {
+                            app_name = pm.getApplicationLabel(
+                                    pm.getApplicationInfo(pkg,
+                                            PackageManager.GET_META_DATA)).toString();
+                        } catch (PackageManager.NameNotFoundException e) {
+                            app_name = "Unknown";
+                        }
+
+                        Drawable app_icon = null;
+                        try {
+                            app_icon = pm.getApplicationIcon(pkg);
+                        } catch (PackageManager.NameNotFoundException e) {
+                            Log.e(TAG, "Error getting app icon");
+                        }
+
+                        mi.setIcon(app_icon);
+                        mi.setTitle(app_name);
+                        menus_to_pkgs.put(mi, pkg);
+                    }
+
+                    updateActiveCount((TextView)mi.getActionView(), active_count);
+                    mi.setVisible(true);
+                    i++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG, "Exception in update menus async postExecute - Error: " +
+                        e.getMessage());
+            }
+        }
+
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            Toast.makeText(getApplicationContext(),
+                    values[0],
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected void onCancelled(Void aVoid) {
+        }
+
+        @Override
+        protected void onCancelled() {
+        }
+
+    }
+
+
+        private void enableSwipeToDeleteAndUndo() {
         SwipeToDelete swipeToDeleteCallback = new SwipeToDelete(this) {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
