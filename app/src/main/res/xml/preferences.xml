@@ -1,0 +1,62 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="Basic Settings">
+        <Preference
+            android:key="notif_access_settings"
+            android:summary="Open Android Notification Access settings"
+            android:title="Notification Access">
+        </Preference>
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="service_notification_switch"
+            android:summary="Show a notification on the status bar for quick access to the Notifier."
+            android:title="Show service notification" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="cache_ntfcn_switch"
+            android:summary="Notifications cleared from the status bar will be cached until a specified expiry timeout."
+            android:title="Cache cleared notifications" />
+        <ListPreference
+            android:defaultValue="2"
+            android:dialogTitle="Select expiration interval"
+            android:entries="@array/settings_list_cache_duration"
+            android:entryValues="@array/settings_list_cache_values"
+            android:key="cache_expiry_list"
+            android:summary="2 hours"
+            android:title="Cache expiration interval" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="ongoing_switch"
+            android:summary="Ongoing/persistent notifications will be ignored"
+            android:title="Include persistent notifications" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="system_ntfcns_switch"
+            android:summary="System notifications will be ignored"
+            android:title="Include System notifications" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Advanced Settings">
+        <Preference
+            android:key="apps_exclusion"
+            android:summary="Excluding 0 apps from notifier"
+            android:title="Apps exclusion list">
+        </Preference>
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="autoremove_switch"
+            android:summary="Remove notifications from the status bar as they arrive"
+            android:title="Auto-remove status bar notifications" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="expanded_switch"
+            android:summary="Showing expanded notifications view by default, shrink when tapped."
+            android:title="Show expanded view by default" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="pause_switch"
+            android:summary="Notification center will read and cache incoming notifications"
+            android:title="Pause Notification Center" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

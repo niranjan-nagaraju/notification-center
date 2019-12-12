@@ -694,29 +694,18 @@ public class MainActivity extends AppCompatActivity
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             Log.d(TAG, "Opening settings");
-            Intent intent=new Intent(
-                    "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
-            startActivity(intent);
+            startActivity(new Intent(MainActivity.this, SettingsActivity.class));
             return true;
         } else if (id == R.id.action_about) {
-            // Stop background notification listener and exit.
-
-            Log.d(TAG, "Exiting application");
-
-            Toast.makeText(getApplicationContext(), "Exiting application",
-                    Toast.LENGTH_LONG).show();
-
-
-            // stop service
-            Intent mServiceIntent = new Intent(this, NLService.class);
-            stopService(mServiceIntent);
-            doUnbindService();
-
-            // Exit activity
-            finish();
+            Log.d(TAG, "Opening About page");
+            startActivity(new Intent(MainActivity.this, AboutActivity.class));
+            return true;
+        } else if (id == R.id.action_clear) {
+            Log.d(TAG, "Clearing status bar notifications");
+            mBoundService.cancelAllNotifications();
+            new RefreshCardsAsyncTask().execute();
         }
 
         return super.onOptionsItemSelected(item);

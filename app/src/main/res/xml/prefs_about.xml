@@ -1,0 +1,53 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="About this app">
+        <!-- android:layout="@layout/preferences_category" -->
+
+    <Preference
+        android:icon="@mipmap/ic_launcher_round"
+        android:summary="Better Notifications for android"
+        android:title="Notifications Center" >
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="@string/url_readme" />
+    </Preference>
+    <Preference
+        android:summary="1.0.1"
+        android:title="Version">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="@string/url_releases" />
+    </Preference>
+
+    <Preference
+        android:summary="View frequently asked questions"
+        android:title="FAQs">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="@string/url_faq" />
+    </Preference>
+
+    <Preference
+        android:summary="Click here to report a bug"
+        android:title="Report a bug">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="@string/url_bug" />
+    </Preference>
+
+    <Preference
+        android:summary="APL 2.0 (Apache Public License 2.0)"
+        android:title="License">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="@string/url_license" />
+    </Preference>
+
+    <Preference
+        android:summary="View Source in Github"
+        android:title="View Source">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="@string/url_src" />
+    </Preference>
+    </PreferenceCategory>
+</PreferenceScreen>

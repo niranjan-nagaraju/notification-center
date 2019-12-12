@@ -1,0 +1,11 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="Select apps to be excluded from Notifier"
+        android:key="apps_category">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="check_none"
+            android:summary="Unselect all applications"
+            android:title="Unselect all" />
+    </PreferenceCategory>
+</PreferenceScreen>
