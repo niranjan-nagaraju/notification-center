@@ -326,8 +326,21 @@ public class MainActivity extends AppCompatActivity
         //ss.setSpan(new RelativeSizeSpan(1.2f), 0, ss.length(), 0);
         submenu_header.setTitle(ss);
 
-        /** Create a bunch of menu items at start, and reuse as needed */
 
+        SharedPreferences sp = getSharedPreferences("Mysharedprefs", MODE_PRIVATE);
+        app_menus_collapsed = sp.getBoolean("app_menus_collapsed", false);
+
+        Log.i(TAG, "onCreate: Saved state: " + app_menus_collapsed);
+
+        /** Set expanded/collapsed icon at startup */
+        ImageView imgView = submenu_header.getActionView().findViewById(R.id.submenu_action_layout);
+        if (app_menus_collapsed) {
+            imgView.setImageResource(R.drawable.arrow_right_48px);
+        } else {
+            imgView.setImageResource(R.drawable.arrow_down_48px);
+        }
+
+        /** Create a bunch of menu items at start, and reuse as needed */
         for (int i=0; i<NUM_CUSTOM_MENUS; i++) {
             MenuItem mi = menu.add(R.id.nav_apps_grp,
                     Menu.FIRST + i, Menu.FIRST+i, "");
@@ -350,11 +363,6 @@ public class MainActivity extends AppCompatActivity
 
         counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
         counterTv.setVisibility(View.GONE);
-
-        SharedPreferences sp = getSharedPreferences("Mysharedprefs", MODE_PRIVATE);
-        app_menus_collapsed = sp.getBoolean("app_menus_collapsed", false);
-
-        Log.i(TAG, "Saved state: " + app_menus_collapsed);
 
         enableSwipeToDeleteAndUndo();
     }
@@ -693,7 +701,7 @@ public class MainActivity extends AppCompatActivity
                     "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
             startActivity(intent);
             return true;
-        } else if (id == R.id.exitapp) {
+        } else if (id == R.id.action_about) {
             // Stop background notification listener and exit.
 
             Log.d(TAG, "Exiting application");
