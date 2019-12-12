@@ -624,10 +624,12 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
     public void removeItem(int position) {
         dataSet.remove(position);
         notifyItemRemoved(position);
+        notifyItemRangeChanged(position, dataSet.size());
     }
 
     public void restoreItem(NtfcnsDataModel item, int position) {
         dataSet.add(position, item);
         notifyItemInserted(position);
+        notifyItemRangeChanged(position, dataSet.size());
     }
 }
