@@ -7,9 +7,11 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Icon;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 
 import android.content.Context;
@@ -105,7 +107,18 @@ public class NLService extends NotificationListenerService {
          intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
          PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
-         pnotif_builder = new NotificationCompat.Builder(this, "notifier")
+
+        Intent action_intent = new Intent();
+        action_intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+        action_intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+        action_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent action_pendingIntent = PendingIntent.getActivity(
+                this, 0, action_intent, 0);
+        NotificationCompat.Action action =
+                new NotificationCompat.Action.Builder(R.mipmap.ic_launcher_round,
+                        "Settings", action_pendingIntent).build();
+
+        pnotif_builder = new NotificationCompat.Builder(this, "notifier")
          .setSmallIcon(R.mipmap.ic_launcher)
          .setContentTitle("Notifications Center")
          .setContentText("Tap to open Notifications Center")
@@ -114,7 +127,8 @@ public class NLService extends NotificationListenerService {
          .setAutoCancel(false)
          .setContentIntent(pendingIntent)
          .setShowWhen(false)
-         .setOngoing(true);
+         .setOngoing(true)
+         .addAction(action);
 
          NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
 

@@ -28,12 +28,12 @@
             android:defaultValue="false"
             android:key="ongoing_switch"
             android:summary="Ongoing/persistent notifications will be ignored"
-            android:title="Include persistent notifications" />
+            android:title="Show persistent notifications" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="system_ntfcns_switch"
             android:summary="System notifications will be ignored"
-            android:title="Include System notifications" />
+            android:title="Show System notifications" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Advanced Settings">

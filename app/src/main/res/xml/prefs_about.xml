@@ -43,7 +43,7 @@
     </Preference>
 
     <Preference
-        android:summary="View Source in Github"
+        android:summary="View Source on Github"
         android:title="View Source">
         <intent
             android:action="android.intent.action.VIEW"

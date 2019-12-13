@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -704,6 +705,7 @@ public class MainActivity extends AppCompatActivity
             return true;
         } else if (id == R.id.action_clear) {
             Log.d(TAG, "Clearing status bar notifications");
+
             mBoundService.cancelAllNotifications();
             new RefreshCardsAsyncTask().execute();
         }
@@ -842,6 +844,8 @@ public class MainActivity extends AppCompatActivity
                 }
                 else if (currentNotificationsView == CurrentNotificationsView.TYPE_ACTIVE) {
                     mBoundService.filter_active(searchString);
+                } else if (currentNotificationsView == CurrentNotificationsView.TYPE_APP) {
+                    mBoundService.filter_apps(app_filter.toString(), searchString);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1058,7 +1062,7 @@ public class MainActivity extends AppCompatActivity
 
                 Snackbar snackbar = Snackbar
                         .make(clayout, snackbar_text.toString(),
-                                Snackbar.LENGTH_LONG);
+                                Snackbar.LENGTH_SHORT);
 
                 snackbar.setAction("UNDO", new View.OnClickListener() {
                     @Override
