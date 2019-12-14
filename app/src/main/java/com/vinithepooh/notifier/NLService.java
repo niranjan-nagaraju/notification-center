@@ -6,26 +6,20 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.pm.PackageManager;
-import android.graphics.drawable.Icon;
-import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.widget.RecyclerView;
-import android.text.format.DateUtils;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.TreeMap;
 
 
@@ -115,11 +109,11 @@ public class NLService extends NotificationListenerService {
         PendingIntent action_pendingIntent = PendingIntent.getActivity(
                 this, 0, action_intent, 0);
         NotificationCompat.Action action =
-                new NotificationCompat.Action.Builder(R.mipmap.ic_launcher_round,
+                new NotificationCompat.Action.Builder(R.drawable.ic_launcher,
                         "Settings", action_pendingIntent).build();
 
         pnotif_builder = new NotificationCompat.Builder(this, "notifier")
-         .setSmallIcon(R.mipmap.ic_launcher)
+         .setSmallIcon(R.drawable.ic_launcher)
          .setContentTitle("Notifications Center")
          .setContentText("Tap to open Notifications Center")
          .setSubText("caching notifications")
