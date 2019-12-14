@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity
 
 
     private @CurrentNotificationsView.CurrentViewMode int currentNotificationsView =
-            CurrentNotificationsView.TYPE_ACTIVE;
+            CurrentNotificationsView.TYPE_ALL;
     private StringBuilder app_filter = new StringBuilder();
 
     // app names to menuitem references mapping
@@ -168,7 +168,13 @@ public class MainActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("Active Notifications");
+
+        if (currentNotificationsView == CurrentNotificationsView.TYPE_ALL) {
+            toolbar.setTitle("All Notifications");
+        } else if (currentNotificationsView == CurrentNotificationsView.TYPE_ACTIVE) {
+            toolbar.setTitle("Active Notifications");
+        }
+
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -418,8 +424,8 @@ public class MainActivity extends AppCompatActivity
             int lastFirstVisiblePosition =
                     ((LinearLayoutManager)recyclerView.getLayoutManager()).
                             findFirstCompletelyVisibleItemPosition();
-            Toolbar toolbar = findViewById(R.id.toolbar);
 
+            Toolbar toolbar = findViewById(R.id.toolbar);
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
                     Log.i(TAG, "Refreshing active view cards!");
@@ -672,7 +678,7 @@ public class MainActivity extends AppCompatActivity
 
             /** If we were in an app view, return to active notifications view */
             if (currentNotificationsView == CurrentNotificationsView.TYPE_APP) {
-                currentNotificationsView = CurrentNotificationsView.TYPE_ACTIVE;
+                currentNotificationsView = CurrentNotificationsView.TYPE_ALL;
                 refreshCards();
                 return;
             }
