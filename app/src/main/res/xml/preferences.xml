@@ -18,11 +18,12 @@
             android:title="Cache cleared notifications" />
         <ListPreference
             android:defaultValue="2"
+            android:dependency="cache_ntfcn_switch"
             android:dialogTitle="Select expiration interval"
             android:entries="@array/settings_list_cache_duration"
             android:entryValues="@array/settings_list_cache_values"
             android:key="cache_expiry_list"
-            android:summary="2 hours"
+            android:summary="Caching cleared notifications for: 2 hours"
             android:title="Cache expiration interval" />
         <SwitchPreference
             android:defaultValue="false"
@@ -50,7 +51,7 @@
         <SwitchPreference
             android:defaultValue="false"
             android:key="expanded_switch"
-            android:summary="Showing expanded notifications view by default, shrink when tapped."
+            android:summary="Show expanded notifications view by default, shrink when tapped."
             android:title="Show expanded view by default" />
         <SwitchPreference
             android:defaultValue="false"

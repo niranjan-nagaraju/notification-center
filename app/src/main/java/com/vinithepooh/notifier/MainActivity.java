@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity
 
     private long last_refresh_time = 0;
 
+    /** Tracks if we are back from a settings activity */
+    private boolean opened_settings_activity = false;
 
     private @CurrentNotificationsView.CurrentViewMode int currentNotificationsView =
             CurrentNotificationsView.TYPE_ALL;
@@ -337,7 +339,7 @@ public class MainActivity extends AppCompatActivity
         SharedPreferences sp = getSharedPreferences("Mysharedprefs", MODE_PRIVATE);
         app_menus_collapsed = sp.getBoolean("app_menus_collapsed", false);
 
-        Log.i(TAG, "onCreate: Saved state: " + app_menus_collapsed);
+        Log.i(TAG, "onCreate: Saved app_menus_collapsed state: " + app_menus_collapsed);
 
         /** Set expanded/collapsed icon at startup */
         ImageView imgView = submenu_header.getActionView().findViewById(R.id.submenu_action_layout);
@@ -615,6 +617,19 @@ public class MainActivity extends AppCompatActivity
         {
             Log.i(TAG,"hasNotificationAccess YES");
 
+            if (opened_settings_activity) {
+                opened_settings_activity = false;
+                /** We are back from settings activity
+                 *  Reload some cfg
+                 *  Specifically, if persistent notification is enabled/disabled
+                 *  create/disable accordingly
+                 *  If default expanded view is enabled, refresh current View.
+                 *
+                 *  All other configuration parameters are checked at their respective places.
+                 */
+                Log.i(TAG, "Back from settings, updating cfg");
+            }
+
             /** refresh tasks on startup +
              * every time the activity is back to focus but only if its been a while
              */
@@ -632,6 +647,7 @@ public class MainActivity extends AppCompatActivity
                 public void onClick(View view) {
                     Intent intent=new Intent(
                             "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                 }
             });
@@ -652,7 +668,7 @@ public class MainActivity extends AppCompatActivity
         SharedPreferences sp = getSharedPreferences("Mysharedprefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
 
-        Log.i(TAG, "Saving state: " + app_menus_collapsed);
+        Log.i(TAG, "Saving app_menus_collapsed state: " + app_menus_collapsed);
 
         editor.putBoolean("app_menus_collapsed", app_menus_collapsed);
         editor.commit();
@@ -703,6 +719,7 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.action_settings) {
             Log.d(TAG, "Opening settings");
+            opened_settings_activity = true;
             startActivity(new Intent(MainActivity.this, SettingsActivity.class));
             return true;
         } else if (id == R.id.action_about) {

@@ -2,10 +2,14 @@
     <PreferenceCategory
         android:title="Select apps to be excluded from Notifier"
         android:key="apps_category">
-        <SwitchPreference
+        <Preference
+            android:key="apploader_header"
+            android:icon="@drawable/arrow_down_48px"
+            android:title="Loading applications list..." />
+        <!-- SwitchPreference
             android:defaultValue="false"
             android:key="check_none"
             android:summary="Unselect all applications"
-            android:title="Unselect all" />
+            android:title="Unselect all" /-->
     </PreferenceCategory>
 </PreferenceScreen>

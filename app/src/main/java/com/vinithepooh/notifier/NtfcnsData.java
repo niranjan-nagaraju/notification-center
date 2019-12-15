@@ -132,7 +132,8 @@ public class NtfcnsData {
     private ConcurrentHashMap<String, NtfcnDataItem> ntfcns_table = new ConcurrentHashMap<>();
     private Context context = null;
     private final String TAG = "bulletin_board_data";
-    private long expire_after = NotifierConfiguration.cfg_cache_expiry_interval*60*60*1000;
+    private long expire_after =
+            NotifierConfiguration.cfg_cache_expiry_interval*60*60*1000;
 
     public void set_expiry_timeout(long expire_after) {
         this.expire_after = expire_after;
@@ -715,6 +716,10 @@ public class NtfcnsData {
         long current = System.currentTimeMillis();
         boolean changed = false;
 
+        Log.i(TAG, "In prune: cache timeout: " +
+                NotifierConfiguration.getCache_expiry_interval());
+
+        expire_after = NotifierConfiguration.getCache_expiry_interval()*60*60*1000;
         Log.i(TAG, "Prune expiry interval: " + expire_after);
 
         Iterator<Map.Entry<String, NtfcnDataItem>> iter =

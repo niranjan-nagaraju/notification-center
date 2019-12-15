@@ -131,6 +131,8 @@ public class NLService extends NotificationListenerService {
 
         //adapter = new Ntfcns_adapter(data);
         ntfcn_items = new NtfcnsData(this.getApplicationContext());
+
+        NotifierConfiguration.initialize_cfg_from_sharedPrefs(this.getApplicationContext());
     }
 
     @Override
