@@ -4,6 +4,7 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
@@ -135,7 +136,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
         TextView textViewApp = holder.textViewApp;
         TextView textViewSubText = holder.textViewSubText;
         TextView textViewPostTime = holder.textViewPostTime;
-        TextView textViewActiveStatus = holder.textViewActiveStatus;
+        final TextView textViewActiveStatus = holder.textViewActiveStatus;
 
         TextView textViewNtfcnsTitle = holder.textViewNtfcnsTitle;
         final TextView textViewNtfcns = holder.textViewNtfcns;
@@ -175,6 +176,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
                 /** Toggle big text and un-expanded text on card click */
                 if (dataSet.get(listPosition).isExpanded()) {
+                    textViewActiveStatus.setText("▾");
+
                     dataSet.get(listPosition).setExpanded(false);
 
                     textViewNtfcnsBigText.setVisibility(View.GONE);
@@ -188,6 +191,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                     editTextRemoteInput.setVisibility(View.GONE);
 
                 } else {
+                    textViewActiveStatus.setText("▴");
+
                     dataSet.get(listPosition).setExpanded(true);
 
                     textViewNtfcnsBigText.setVisibility(View.VISIBLE);
@@ -266,10 +271,14 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                 DateUtils.getRelativeTimeSpanString(dataSet.get(listPosition).getPostTime()));
 
         /** set active status if notification is still in the status bar */
-        if (dataSet.get(listPosition).getNtfcn_active_status() == false)
-            textViewActiveStatus.setVisibility(View.GONE);
-        else
+        if (dataSet.get(listPosition).getNtfcn_active_status() == false) {
             textViewActiveStatus.setVisibility(View.VISIBLE);
+            textViewActiveStatus.setTextColor(Color.BLACK);
+        } else {
+            Context context = textViewActiveStatus.getContext().getApplicationContext();
+            textViewActiveStatus.setVisibility(View.VISIBLE);
+            textViewActiveStatus.setTextColor(context.getColor(R.color.holo_green_light));
+        }
 
         textViewNtfcnsTitle.setText(dataSet.get(listPosition).getNtfcn_title());
 
@@ -559,6 +568,7 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
         /** Set expanded or un-expanded view */
         if (dataSet.get(listPosition).isExpanded() == false) {
+            textViewActiveStatus.setText("▾");
             textViewNtfcnsBigText.setVisibility(View.GONE);
             textViewNtfcns.setVisibility(View.VISIBLE);
             imageViewBigPicture.setVisibility(View.GONE);
@@ -568,8 +578,8 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
 
             /** Hide remote text input */
             editTextRemoteInput.setVisibility(View.GONE);
-
         } else {
+            textViewActiveStatus.setText("▴");
             textViewNtfcnsBigText.setVisibility(View.VISIBLE);
             textViewNtfcns.setVisibility(View.GONE);
             if(imageViewBigPicture.getDrawable() != null) {
@@ -593,6 +603,26 @@ public class Ntfcns_adapter extends RecyclerView.Adapter<Ntfcns_adapter.NViewHol
                 ntfcn_open_action.performClick();
             }
         }
+
+        final Notification ntfcn = sbn.getNotification();
+        /**
+         * Expanded view is exactly the same as un-expanded
+         */
+        if (textViewNtfcns.getText().toString().equals(
+                textViewNtfcnsBigText.getText().toString()) &&
+                imageViewBigPicture.getDrawable() == null &&
+                (NotificationCompat.getActionCount(ntfcn) == 0)) {
+
+            Log.i(TAG, "Expanded view and collapsed views are the same");
+
+            if (dataSet.get(listPosition).getNtfcn_active_status() == true) {
+                textViewActiveStatus.setText("•");
+                textViewActiveStatus.setVisibility(View.VISIBLE);
+            } else {
+                textViewActiveStatus.setVisibility(View.GONE);
+            }
+        }
+
 
         /** Autolink prevents card view onclick() from working, add an explicit listener */
         textViewNtfcnsBigText.setOnClickListener(new View.OnClickListener() {
