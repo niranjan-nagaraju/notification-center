@@ -125,6 +125,7 @@
                     android:layout_weight="0.01"
                     android:paddingLeft="2dp"
                     android:text="▾"
+                    android:textStyle="bold"
                     android:textAlignment="center"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="@android:color/holo_green_light" />
