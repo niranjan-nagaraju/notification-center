@@ -68,7 +68,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             Preference epref = findPreference("apps_exclusion");
             exclusion_pref = epref;
             epref.setSummary("Excluding " +
-                    NotifierConfiguration.excluded_packages.size() + " apps from notifier");
+                    NotifierConfiguration.excluded_packages.size() + " apps from Notifier");
             Log.i(TAG, "Epref excluding: " + NotifierConfiguration.excluded_packages.size());
 
             epref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -103,7 +103,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         Log.i(TAG, "Exclusion list: " + NotifierConfiguration.excluded_packages);
         exclusion_pref.setSummary("Excluding " +
-                NotifierConfiguration.excluded_packages.size() + " apps from notifier");
+                NotifierConfiguration.excluded_packages.size() + " apps from Notifier");
     }
 
     @Override

@@ -290,6 +290,7 @@ public class NtfcnsData {
             Log.i(TAG, "Search words: " + s);
         }
 
+        Boolean expand_by_default = NotifierConfiguration.cfg_default_expanded_view;
 
         for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
             String key = entry.getKey();
@@ -341,7 +342,7 @@ public class NtfcnsData {
                     bigtext,
                     big_icon,
                     big_picture,
-                    false  /** notifications are collapsed by default */
+                    expand_by_default  /** notifications are collapsed by default */
             ));
         }
 
@@ -402,6 +403,7 @@ public class NtfcnsData {
             Log.i(TAG, "Search words: " + s);
         }
 
+        Boolean expand_by_default = NotifierConfiguration.cfg_default_expanded_view;
         for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
             String key = entry.getKey();
 
@@ -447,7 +449,7 @@ public class NtfcnsData {
                     bigtext,
                     big_icon,
                     big_picture,
-                    false  /** notifications are collapsed by default */
+                    expand_by_default  /** notifications are collapsed by default */
             ));
         }
 

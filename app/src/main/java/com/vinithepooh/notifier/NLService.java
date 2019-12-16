@@ -20,6 +20,7 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.TreeMap;
 
 
@@ -78,6 +79,8 @@ public class NLService extends NotificationListenerService {
             ));
         } */
 
+        /** Initialize configuration from shared preferences at startup */
+        NotifierConfiguration.initialize_cfg_from_sharedPrefs(this.getApplicationContext());
 
         /** Create a persistent notification */
          // Create the NotificationChannel, but only on API 26+ because
@@ -126,14 +129,40 @@ public class NLService extends NotificationListenerService {
 
          NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
 
-         /** Send out persistent notification */
-         notificationManager.notify(01, pnotif_builder.build());
+         if (NotifierConfiguration.cfg_svc_notification_enabled) {
+             show_notification();
+         }
 
         //adapter = new Ntfcns_adapter(data);
         ntfcn_items = new NtfcnsData(this.getApplicationContext());
-
-        NotifierConfiguration.initialize_cfg_from_sharedPrefs(this.getApplicationContext());
     }
+
+
+    /** Show persistent notification */
+    public void show_notification() {
+        Log.i(TAG, "Showing persistent notification");
+
+        if (NotifierConfiguration.cfg_notifier_paused) {
+            Log.i(TAG, "Notifier paused. Notify as paused");
+            pnotif_builder.setSubText("service paused");
+        } else {
+            pnotif_builder.setSubText("caching notifications");
+        }
+
+        /** Send out persistent notification */
+        notificationManager.notify(01, pnotif_builder.build());
+    }
+
+
+
+    /** Hide persistent notification */
+    public void hide_notification() {
+        Log.i(TAG, "Hiding persistent notification");
+
+        notificationManager.cancel(01);
+    }
+
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -277,8 +306,11 @@ public class NLService extends NotificationListenerService {
     /** Add a status bar notification from active notifications to the active table */
     private boolean addActiveSBN(StatusBarNotification sbn) {
         if ( sbn.isOngoing() || !sbn.isClearable() ) {
-            Log.i(TAG, "Ongoing or not clearable, ignoring");
-            return false;
+            if (!NotifierConfiguration.cfg_persistent_notifications_enabled) {
+                Log.i(TAG, "Ongoing or not clearable, ignoring");
+                return false;
+            }
+            Log.i(TAG, "Persistent notifications allowed. Adding");
         }
 
         Object extra_text = sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT);
@@ -288,8 +320,11 @@ public class NLService extends NotificationListenerService {
         }
 
         if (sbn.getPackageName().equals("android")) {
-            Log.i(TAG, "System notifications. Ignoring");
-            return false;
+            if (!NotifierConfiguration.cfg_system_notifications_enabled) {
+                Log.i(TAG, "System notifications. Ignoring");
+                return false;
+            }
+            Log.i(TAG, "System notifications enabled. Adding");
         }
 
         String condensed_string = ntfcn_items.getCondensedString(sbn);
@@ -307,12 +342,29 @@ public class NLService extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         Log.i(TAG,"**********  onNotificationPosted");
+
+        if (NotifierConfiguration.cfg_notifier_paused) {
+            Log.i(TAG, "Notifier paused. Ignoring...");
+            return;
+        }
+
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
+
+        HashSet<String> exclusion_list = NotifierConfiguration.excluded_packages;
+        if (exclusion_list.contains(sbn.getPackageName())) {
+            Log.i(TAG, "Pkg: " + sbn.getPackageName() + " in exclusion list. Ignoring.");
+            return;
+        }
 
         Log.i(TAG, "SBN Key: " + sbn.getKey());
         Log.i(TAG, "Flags: " +
                 ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0));
+
+        if (NotifierConfiguration.cfg_auto_remove_statusbar) {
+            Log.i(TAG, "Auto-remove status bar enabled. Clearing notification");
+            clearAll(sbn);
+        }
 
         /** skip group headers */
         if ( ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0))
@@ -338,8 +390,22 @@ public class NLService extends NotificationListenerService {
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
         Log.i(TAG,"**********  onNotificationRemoved");
+
+        if (NotifierConfiguration.cfg_notifier_paused) {
+            Log.i(TAG, "Notifier paused. Ignoring...");
+            return;
+        }
+
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
+
+
+        if (!NotifierConfiguration.cfg_cache_notifications_enabled) {
+            Log.i(TAG, "Not caching cleared notifications.");
+
+            /** Remove notification completely from the cache */
+            remove(sbn, false);
+        }
 
         Log.i(TAG, "SBN Key: " + sbn.getKey());
 
@@ -358,6 +424,11 @@ public class NLService extends NotificationListenerService {
      */
     public void sync_notifications() {
         Log.i(TAG,"**********  sync_notifications");
+
+        if (NotifierConfiguration.cfg_notifier_paused) {
+            Log.i(TAG, "Notifier paused. Ignoring...");
+            return;
+        }
 
         sync_in_progress = true;
         /**
@@ -381,6 +452,12 @@ public class NLService extends NotificationListenerService {
                         "\t" + sbn.getPackageName());
 
                 Log.i(TAG,"App name :" + app_name +  "\n");
+
+                HashSet<String> exclusion_list = NotifierConfiguration.excluded_packages;
+                if (exclusion_list.contains(sbn.getPackageName())) {
+                    Log.i(TAG, "Pkg: " + sbn.getPackageName() + " in exclusion list. Ignoring.");
+                    continue;
+                }
 
                 /** skip group headers */
                 if ( ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0)) {
@@ -458,7 +535,15 @@ public class NLService extends NotificationListenerService {
 
         /** Update active notifications count in persistent notification */
         pnotif_builder.setContentText("Tap to open Notifications Center");
-        notificationManager.notify(01, pnotif_builder.build());
+
+        if (NotifierConfiguration.cfg_svc_notification_enabled) {
+            show_notification();
+        }
+
+        /**
+         * TODO: if needed, remove all inactive applications at this point
+         * if NotifierConfiguration.cfg_cache_notifications_enabled is false
+         */
     }
 
 

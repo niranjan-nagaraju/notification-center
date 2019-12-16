@@ -40,7 +40,7 @@
     <PreferenceCategory android:title="Advanced Settings">
         <Preference
             android:key="apps_exclusion"
-            android:summary="Excluding 0 apps from notifier"
+            android:summary="Excluding 0 apps from Notifier"
             android:title="Apps exclusion list">
         </Preference>
         <SwitchPreference
@@ -56,8 +56,8 @@
         <SwitchPreference
             android:defaultValue="false"
             android:key="pause_switch"
-            android:summary="Notification center will read and cache incoming notifications"
-            android:title="Pause Notification Center" />
+            android:summary="Notifications center will read and cache incoming notifications"
+            android:title="Pause Notifications Center" />
     </PreferenceCategory>
 
 </PreferenceScreen>

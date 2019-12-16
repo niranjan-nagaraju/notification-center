@@ -628,6 +628,15 @@ public class MainActivity extends AppCompatActivity
                  *  All other configuration parameters are checked at their respective places.
                  */
                 Log.i(TAG, "Back from settings, updating cfg");
+
+                if (NotifierConfiguration.cfg_svc_notification_enabled) {
+                    mBoundService.show_notification();
+                } else {
+                    mBoundService.hide_notification();
+                }
+
+                /** Force a refresh of the current view after returning from settings */
+                last_refresh_time = 0;
             }
 
             /** refresh tasks on startup +
