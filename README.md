@@ -14,7 +14,10 @@
     + De-duplication: Removes duplicate notifications with exactly the same contents, and retains only the recent update.
 
   + #### FAQs ####
-    [Link to FAQs](https://github.com/niranjan-nagaraju/notification-center/blob/master/FAQ.md)  
+    [Link to FAQs](https://github.com/niranjan-nagaraju/notification-center/blob/master/FAQ.md "FAQs")  
+    
+  + #### Releases ####  
+    [APK releases](https://github.com/niranjan-nagaraju/notification-center/releases "Releases")
   
   
 ![Apache License-2.0](https://img.shields.io/github/license/niranjan-nagaraju/notification-center "License")
