@@ -43,7 +43,8 @@
   + #### Privacy and security ####
     + ##### How secure is my data? #####
       Notifier runs entirely in memory, leaves no footprints either on the phone storage nor does it connect to the internet.  
-      Without any persistent storage or network access, avenues to communicate any data that might be collected are very limited.  
+      Without any persistent storage or network access, avenues to send out any data even if collected (Notifier doesn't!) are very limited.  
+  
 
     + ##### Can I trust the apk to be in sync with the source? #####
       NO. It's a good policy to TNO (Trust No One).  
