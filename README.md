@@ -1,5 +1,15 @@
 ## Notifier / Notifications Center ##
 ### Better notifications for Android ###
+
+  <table align="center">
+        <tr> 
+        <td><img src="https://github.com/niranjan-nagaraju/notification-center/blob/master/assets/app-ss.jpg" width="150"> </td>
+        <td> <img src="https://github.com/niranjan-nagaraju/notification-center/blob/master/assets/appmenus-ss.jpg" width="150"> </td>
+        <td><img src="https://github.com/niranjan-nagaraju/notification-center/blob/master/assets/settings-ss.jpg" width="150"> </td>
+        <td><img src="https://github.com/niranjan-nagaraju/notification-center/blob/master/assets/about-ss.jpg" width="150"> </td>                   </tr>
+   </table>      
+
+
         
   + #### What is Notifier/Notifications center?  ####
     Tagged 'Better notifications for android', Notifier is a mailbox for your status bar notifications.  
@@ -13,6 +23,7 @@
     + Select text and copy notification contents.
     + De-duplication: Removes duplicate notifications with exactly the same contents, and retains only the recent update.
 
+  
   + #### FAQs ####
     [Link to FAQs](https://github.com/niranjan-nagaraju/notification-center/blob/master/FAQ.md "FAQs")  
     
