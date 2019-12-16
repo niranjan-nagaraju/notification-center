@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Created by vinithepooh on 16/03/19.
+ * Created by Niranjan Nagaraju on 16/03/19.
  */
 
 public class CurrentNotificationsView {

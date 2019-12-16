@@ -6,24 +6,22 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.pm.PackageManager;
-import android.graphics.drawable.Icon;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.widget.RecyclerView;
-import android.text.format.DateUtils;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.TreeMap;
 
 
 public class NLService extends NotificationListenerService {
@@ -46,6 +44,13 @@ public class NLService extends NotificationListenerService {
 
     private NotificationCompat.Builder pnotif_builder;
     private NotificationManager notificationManager;
+
+    public boolean isSync_in_progress() {
+        return sync_in_progress;
+    }
+
+    /** flag to indicate if sync is in progress on any thread */
+    private boolean sync_in_progress = false;
 
 
     public class NLBinder extends Binder {
@@ -74,6 +79,8 @@ public class NLService extends NotificationListenerService {
             ));
         } */
 
+        /** Initialize configuration from shared preferences at startup */
+        NotifierConfiguration.initialize_cfg_from_sharedPrefs(this.getApplicationContext());
 
         /** Create a persistent notification */
          // Create the NotificationChannel, but only on API 26+ because
@@ -97,25 +104,65 @@ public class NLService extends NotificationListenerService {
          intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
          PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
-         pnotif_builder = new NotificationCompat.Builder(this, "notifier")
-         .setSmallIcon(R.mipmap.ic_launcher)
+
+        Intent action_intent = new Intent();
+        action_intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+        action_intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+        action_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent action_pendingIntent = PendingIntent.getActivity(
+                this, 0, action_intent, 0);
+        NotificationCompat.Action action =
+                new NotificationCompat.Action.Builder(R.drawable.ic_launcher,
+                        "Settings", action_pendingIntent).build();
+
+        pnotif_builder = new NotificationCompat.Builder(this, "notifier")
+         .setSmallIcon(R.drawable.ic_launcher)
          .setContentTitle("Notifications Center")
-         .setContentText("Active Notifications: NA")
+         .setContentText("Tap to open Notifications Center")
          .setSubText("caching notifications")
          .setPriority(NotificationCompat.PRIORITY_LOW)
          .setAutoCancel(false)
          .setContentIntent(pendingIntent)
          .setShowWhen(false)
-         .setOngoing(true);
+         .setOngoing(true)
+         .addAction(action);
 
          NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
 
-         /** Send out persistent notification */
-         notificationManager.notify(01, pnotif_builder.build());
+         if (NotifierConfiguration.cfg_svc_notification_enabled) {
+             show_notification();
+         }
 
         //adapter = new Ntfcns_adapter(data);
         ntfcn_items = new NtfcnsData(this.getApplicationContext());
     }
+
+
+    /** Show persistent notification */
+    public void show_notification() {
+        Log.i(TAG, "Showing persistent notification");
+
+        if (NotifierConfiguration.cfg_notifier_paused) {
+            Log.i(TAG, "Notifier paused. Notify as paused");
+            pnotif_builder.setSubText("service paused");
+        } else {
+            pnotif_builder.setSubText("caching notifications");
+        }
+
+        /** Send out persistent notification */
+        notificationManager.notify(01, pnotif_builder.build());
+    }
+
+
+
+    /** Hide persistent notification */
+    public void hide_notification() {
+        Log.i(TAG, "Hiding persistent notification");
+
+        notificationManager.cancel(01);
+    }
+
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -130,16 +177,26 @@ public class NLService extends NotificationListenerService {
 
                         if (System.currentTimeMillis() > time_last_pruned + 60*1000) {
                             Log.i(debug_tag, "Pruning old entries");
-                            ntfcn_items.prune();
 
-                            time_last_pruned = System.currentTimeMillis();
+                            if (sync_in_progress) {
+                                /** If a sync is in progress, skip this prune */
+                                Log.i(TAG, "Sync in progress, skipping prune");
+                            } else {
+                                ntfcn_items.prune();
+
+                                time_last_pruned = System.currentTimeMillis();
+                            }
                         }
 
                         /** Resync active notifications every 5 minutes */
                         if (System.currentTimeMillis() > time_since_last_resync + 5*60*1000) {
                             time_since_last_resync = System.currentTimeMillis();
-                            Log.i(TAG, "Resync in progress!");
-                            sync_notifications();
+                            if (!sync_in_progress) {
+                                Log.i(TAG, "Resync in progress!");
+                                sync_notifications();
+                            } else {
+                                Log.i(TAG, "Another sync already in progress");
+                            }
                         }
                     } catch (Exception e) {
                         Log.e(debug_tag, "Error in service thread" + e.getMessage());
@@ -210,13 +267,50 @@ public class NLService extends NotificationListenerService {
 
     }
 
+    /**
+     * Remove a notification entry from the table if cached
+     * Mark inactive if it was an active notification
+     *
+     * NOTE: The card's active status is as seen in the view
+     *       and not from the dataset because they may no longer
+     *       be in sync.
+     */
+    public void remove(StatusBarNotification sbn, boolean active) {
+        this.ntfcn_items.remove(sbn, active);
+    }
+
+
+    /**
+     * Clear all status bar notifications with matching condensed key (same content)
+     * NOTE: Since we de-dup, we have only one instance stored for each repeated
+     * status bar notification.
+     * So when a swipe to clear is attempted, we'll have to remove all duplicates
+     * from the status bar
+     */
+    public void clearAll(StatusBarNotification sbn) {
+        String key = this.ntfcn_items.getCondensedString(sbn);
+
+        for (StatusBarNotification asbn: getActiveNotifications()) {
+            /** skip group headers
+            if ( ((asbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0)) {
+                Log.i(TAG, "skippiing group header key: " + asbn.getKey());
+                continue;
+             } */
+
+            if (ntfcn_items.getCondensedString(asbn).equals(key))
+                cancelNotification(asbn.getKey());
+        }
+    }
 
 
     /** Add a status bar notification from active notifications to the active table */
     private boolean addActiveSBN(StatusBarNotification sbn) {
         if ( sbn.isOngoing() || !sbn.isClearable() ) {
-            Log.i(TAG, "Ongoing or not clearable, ignoring");
-            return false;
+            if (!NotifierConfiguration.cfg_persistent_notifications_enabled) {
+                Log.i(TAG, "Ongoing or not clearable, ignoring");
+                return false;
+            }
+            Log.i(TAG, "Persistent notifications allowed. Adding");
         }
 
         Object extra_text = sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT);
@@ -226,8 +320,11 @@ public class NLService extends NotificationListenerService {
         }
 
         if (sbn.getPackageName().equals("android")) {
-            Log.i(TAG, "System notifications. Ignoring");
-            return false;
+            if (!NotifierConfiguration.cfg_system_notifications_enabled) {
+                Log.i(TAG, "System notifications. Ignoring");
+                return false;
+            }
+            Log.i(TAG, "System notifications enabled. Adding");
         }
 
         String condensed_string = ntfcn_items.getCondensedString(sbn);
@@ -245,10 +342,39 @@ public class NLService extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         Log.i(TAG,"**********  onNotificationPosted");
+
+        if (NotifierConfiguration.cfg_notifier_paused) {
+            Log.i(TAG, "Notifier paused. Ignoring...");
+            return;
+        }
+
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
 
+        HashSet<String> exclusion_list = NotifierConfiguration.excluded_packages;
+        if (exclusion_list.contains(sbn.getPackageName())) {
+            Log.i(TAG, "Pkg: " + sbn.getPackageName() + " in exclusion list. Ignoring.");
+            return;
+        }
+
+        Log.i(TAG, "SBN Key: " + sbn.getKey());
+        Log.i(TAG, "Flags: " +
+                ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0));
+
+        if (NotifierConfiguration.cfg_auto_remove_statusbar) {
+            Log.i(TAG, "Auto-remove status bar enabled. Clearing notification");
+            clearAll(sbn);
+        }
+
+        /** skip group headers */
+        if ( ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0))
+            return;
+
         addActiveSBN(sbn.clone());
+
+        if (sync_in_progress)
+            return;
+
 
         /** if prune/refresh thread has been killed for some reason,
          * and prune hasnt been run for 30 minutes
@@ -264,8 +390,24 @@ public class NLService extends NotificationListenerService {
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
         Log.i(TAG,"**********  onNotificationRemoved");
+
+        if (NotifierConfiguration.cfg_notifier_paused) {
+            Log.i(TAG, "Notifier paused. Ignoring...");
+            return;
+        }
+
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText
                 + "\t" + sbn.getPackageName());
+
+
+        if (!NotifierConfiguration.cfg_cache_notifications_enabled) {
+            Log.i(TAG, "Not caching cleared notifications.");
+
+            /** Remove notification completely from the cache */
+            remove(sbn, false);
+        }
+
+        Log.i(TAG, "SBN Key: " + sbn.getKey());
 
         String condensed_string = ntfcn_items.getCondensedString(sbn);
         if ( ntfcn_items.addInactive(condensed_string, sbn) ) {
@@ -283,11 +425,16 @@ public class NLService extends NotificationListenerService {
     public void sync_notifications() {
         Log.i(TAG,"**********  sync_notifications");
 
+        if (NotifierConfiguration.cfg_notifier_paused) {
+            Log.i(TAG, "Notifier paused. Ignoring...");
+            return;
+        }
+
+        sync_in_progress = true;
         /**
          * Initially mark everything in notifications table as inactive
          */
         ntfcn_items.markAllInactive();
-        int active_items = 0;
 
         for (StatusBarNotification asbn : getActiveNotifications()) {
             StatusBarNotification sbn = asbn.clone();
@@ -306,15 +453,25 @@ public class NLService extends NotificationListenerService {
 
                 Log.i(TAG,"App name :" + app_name +  "\n");
 
+                HashSet<String> exclusion_list = NotifierConfiguration.excluded_packages;
+                if (exclusion_list.contains(sbn.getPackageName())) {
+                    Log.i(TAG, "Pkg: " + sbn.getPackageName() + " in exclusion list. Ignoring.");
+                    continue;
+                }
+
+                /** skip group headers */
+                if ( ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0)) {
+                    Log.i(TAG, "skippiing group header key: " + sbn.getKey());
+                    continue;
+                }
+
                 /** Add a new active notification entry or
                  * just mark it as active if it already exists
                  */
-                if (addActiveSBN(sbn)) {
-                    active_items ++;
-                }
+                addActiveSBN(sbn);
+
 
                 /**
-
                 if (sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEMPLATE).equals(
                         "android.app.Notification$MessagingStyle")
                         ) {
@@ -331,6 +488,8 @@ public class NLService extends NotificationListenerService {
                 }
 
 
+                Log.i(TAG, "Flags: " +
+                        ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) != 0));
 
                     Log.i(TAG, "Title :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TITLE) + "\n");
                     Log.i(TAG, "Text :" + sbn.getNotification().extras.get(NotificationCompat.EXTRA_TEXT) + "\n");
@@ -361,17 +520,30 @@ public class NLService extends NotificationListenerService {
                         Log.i(TAG, "Action :" + action.title + " Intent: " + action.actionIntent.toString() + "\n");
                     }
                  */
-
             } catch(Exception e) {
                 Log.e(TAG, "Exception occurred while syncing notifications: " + e.getMessage());
             }
         }
 
-        this.num_active = active_items;
+        /**
+         * If there are entries previously marked inactive, but doesn't have its cleared time set,
+         * Set its cleared time to now
+         */
+        ntfcn_items.update_cleared_time_if_zero();
+        this.num_active = ntfcn_items.getActiveCount();
+        sync_in_progress = false;
 
         /** Update active notifications count in persistent notification */
-        pnotif_builder.setContentText("Active Notifications: " + String.valueOf(num_active));
-        notificationManager.notify(01, pnotif_builder.build());
+        pnotif_builder.setContentText("Tap to open Notifications Center");
+
+        if (NotifierConfiguration.cfg_svc_notification_enabled) {
+            show_notification();
+        }
+
+        /**
+         * TODO: if needed, remove all inactive applications at this point
+         * if NotifierConfiguration.cfg_cache_notifications_enabled is false
+         */
     }
 
 
@@ -396,7 +568,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         adapter = new Ntfcns_adapter(active);
@@ -418,7 +591,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         ArrayList inactive = ntfcn_items.filter_inactive("");
@@ -436,7 +610,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         all.addAll(inactive);
@@ -460,12 +635,15 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         adapter = new Ntfcns_adapter(active);
     }
 
+
+    /** Filter all notifications matching search key */
     public void filter_all(String searchKey) {
         ArrayList all = ntfcn_items.filter_active(searchKey);
         /** Add a group header */
@@ -481,7 +659,8 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         ArrayList inactive = ntfcn_items.filter_inactive(searchKey);
@@ -498,13 +677,66 @@ public class NLService extends NotificationListenerService {
                 null,
                 null,
                 null,
-                null
+                null,
+                true   /** groups are expanded by default */
         ));
 
         all.addAll(inactive);
         adapter = new Ntfcns_adapter(all);
     }
 
+
+    /** Filter all notifications from package */
+    public void filter_apps(String pkg, String searchKey) {
+        ArrayList all = ntfcn_items.filter_active_app(pkg, searchKey);
+        /** Add a group header */
+        all.add(0, new NtfcnsDataModel(
+                null,
+                "Active Notifications",
+                null,
+                null,
+                null,
+                0,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true   /** groups are expanded by default */
+        ));
+
+        ArrayList inactive = ntfcn_items.filter_inactive_app(pkg, searchKey);
+        /** Add a group header */
+        inactive.add(0, new NtfcnsDataModel(
+                null,
+                "Cached Notifications",
+                null,
+                null,
+                null,
+                0,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true   /** groups are expanded by default */
+        ));
+
+        all.addAll(inactive);
+        adapter = new Ntfcns_adapter(all);
+    }
+
+
+
+    /**
+     * Build a list of packages from notifications sorted by their app name,
+     * and their active count
+     */
+    public TreeMap<String, Integer> build_apps_list() {
+        return this.ntfcn_items.build_apps_list();
+    }
 
     /** remove all items from [startposition] in adapter
      * as long as they have the same group headers

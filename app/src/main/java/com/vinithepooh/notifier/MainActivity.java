@@ -4,17 +4,26 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.service.notification.StatusBarNotification;
+import android.support.annotation.NonNull;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NotificationCompat;
@@ -24,11 +33,17 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Editable;
+import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.text.util.Linkify;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.SubMenu;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -46,22 +61,40 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Text;
+
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static android.graphics.Typeface.BOLD;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "bulletin_board";
-    private final String APP_NAME="Notifications Center";
+    private final String APP_NAME="Notifier";
+    private final int NUM_CUSTOM_MENUS = 50;
+
     private long last_refresh_time = 0;
 
+    /** Tracks if we are back from a settings activity */
+    private boolean opened_settings_activity = false;
 
     private @CurrentNotificationsView.CurrentViewMode int currentNotificationsView =
-            CurrentNotificationsView.TYPE_ACTIVE;
+            CurrentNotificationsView.TYPE_ALL;
+    private StringBuilder app_filter = new StringBuilder();
 
     // app names to menuitem references mapping
-    private HashMap<String, MenuItem> app_menus;
+    //private ConcurrentHashMap<String, MenuItem> pkgs_to_menus = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<MenuItem, String> menus_to_pkgs = new ConcurrentHashMap<>();
+    private ArrayList<MenuItem> custom_menus = new ArrayList<>();
+    private MenuItem submenu_header;
+    private boolean app_menus_collapsed = false;
+
     private static NLService mBoundService;
     private boolean mIsBound;
 
@@ -75,6 +108,7 @@ public class MainActivity extends AppCompatActivity
     private static EditText editSearchText;
 
     private SwipeRefreshLayout swipeLayout;
+    private static CoordinatorLayout clayout;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -136,7 +170,13 @@ public class MainActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("Active Notifications");
+
+        if (currentNotificationsView == CurrentNotificationsView.TYPE_ALL) {
+            toolbar.setTitle("All Notifications");
+        } else if (currentNotificationsView == CurrentNotificationsView.TYPE_ACTIVE) {
+            toolbar.setTitle("Active Notifications");
+        }
+
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -147,15 +187,11 @@ public class MainActivity extends AppCompatActivity
         swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                swipeLayout.setRefreshing(true);
-                if(in_search) {
-                    performSearch(editSearchText.getText().toString());
-                    swipeLayout.setRefreshing(false);
-                } else {
-                    refreshCards();
-                }
+                refreshCards();
             }
         });
+
+        clayout = findViewById(R.id.clayout);
 
 
         /** floating search button */
@@ -183,13 +219,10 @@ public class MainActivity extends AppCompatActivity
                     String searchString = editSearchText.getText().toString();
 
                     editSearchText.clearFocus();
-                    Snackbar.make(findViewById(android.R.id.content), "searching for: " +
-                                    searchString,
-                            Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
 
-                    /** clear text for future searches */
-                    editSearchText.setText("");
+                    Toast.makeText(getApplicationContext(), "searching for: " + searchString,
+                            Toast.LENGTH_LONG).show();
+
                     performSearch(searchString);
                 } else {
                     /**
@@ -197,6 +230,10 @@ public class MainActivity extends AppCompatActivity
                      */
                     editSearchText.setVisibility(View.VISIBLE);
                     editSearchText.requestFocus();
+
+                    /** Show keyboard when fab is clicked and input is empty */
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
                 }
             }
         });
@@ -208,10 +245,9 @@ public class MainActivity extends AppCompatActivity
                     String searchString = editSearchText.getText().toString();
 
                     editSearchText.clearFocus();
-                    Snackbar.make(findViewById(android.R.id.content), "searching for: " +
-                                    searchString,
-                            Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+
+                    Toast.makeText(getApplicationContext(), "searching for: " + searchString,
+                            Toast.LENGTH_LONG).show();
 
                     performSearch(searchString);
                     return true;
@@ -225,12 +261,10 @@ public class MainActivity extends AppCompatActivity
             public void onFocusChange(View v, boolean hasFocus) {
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (hasFocus) {
-                    // show keyboard on focus
-                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+                    // Do nothing on focus
+                    //imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
                 } else {
-                    // hide searchbox
-                    editSearchText.setVisibility(View.GONE);
-                    // hide keyboard
+                    // hide keyboard when searchbox is not in focus
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                 }
             }
@@ -246,6 +280,7 @@ public class MainActivity extends AppCompatActivity
                 if (keyCode == KeyEvent.KEYCODE_BACK) {
                     editSearchText.clearFocus();
                     editSearchText.setVisibility(View.GONE);
+                    editSearchText.setText("");
 
 
                     /**
@@ -276,10 +311,11 @@ public class MainActivity extends AppCompatActivity
             public void afterTextChanged(Editable editable) {
                 Log.i(TAG, "Edit text changed");
                 String searchString = editSearchText.getText().toString();
-                performSearch(searchString);
+
+                if (!searchString.isEmpty())
+                    performSearch(searchString);
             }
         });
-
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -289,20 +325,40 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        navigationView.setItemIconTintList(null); // remove tints for icon in nav menus
 
-        if (Settings.Secure.getString(
-                this.getContentResolver(),
-                "enabled_notification_listeners").contains(getApplicationContext().getPackageName()))
-        {
-            Log.i(TAG,"hasNotificationAccess YES");
+        final Menu menu = navigationView.getMenu();
+        submenu_header = menu.findItem(R.id.nav_apps);
+        SpannableString ss = new SpannableString("App-wise Notifications");
+        ss.setSpan(new ForegroundColorSpan(Color.GRAY), 0, ss.length(), 0);
+        ss.setSpan(new StyleSpan(BOLD), 0, ss.length(), 0);
+        //ss.setSpan(new RelativeSizeSpan(1.2f), 0, ss.length(), 0);
+        submenu_header.setTitle(ss);
+
+
+        SharedPreferences sp = getSharedPreferences("Mysharedprefs", MODE_PRIVATE);
+        app_menus_collapsed = sp.getBoolean("app_menus_collapsed", false);
+
+        Log.i(TAG, "onCreate: Saved app_menus_collapsed state: " + app_menus_collapsed);
+
+        /** Set expanded/collapsed icon at startup */
+        ImageView imgView = submenu_header.getActionView().findViewById(R.id.submenu_action_layout);
+        if (app_menus_collapsed) {
+            imgView.setImageResource(R.drawable.arrow_right_48px);
         } else {
-            //service is not enabled try to enabled by calling...
-            Log.i(TAG,"hasNotificationAccess NO");
-            Snackbar.make(findViewById(android.R.id.content), APP_NAME + " does not have notification access, Enable from settings",
-                    Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-            Toast.makeText(getApplicationContext(), APP_NAME + " does not have notification access, Enable from settings",
-                    Toast.LENGTH_LONG).show();
+            imgView.setImageResource(R.drawable.arrow_down_48px);
+        }
+
+        /** Create a bunch of menu items at start, and reuse as needed */
+        for (int i=0; i<NUM_CUSTOM_MENUS; i++) {
+            MenuItem mi = menu.add(R.id.nav_apps_grp,
+                    Menu.FIRST + i, Menu.FIRST+i, "");
+            mi.setCheckable(true);
+            mi.setActionView(R.layout.menu_counter);
+            mi.setVisible(false);
+
+            custom_menus.add(mi);
+            menus_to_pkgs.put(mi, "");
         }
 
         cardsOnClickListener = new CardsOnClickListener(this);
@@ -313,14 +369,11 @@ public class MainActivity extends AppCompatActivity
         layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
-        removedItems = new ArrayList<Integer>();
 
         counterTv = (TextView) navigationView.getMenu().findItem(R.id.nav_ntfcns).getActionView();
-        counterTv.setText("");
+        counterTv.setVisibility(View.GONE);
 
-
-        // TODO: START runThread(); to be an UI update thread
-        // checks active notifications, and updates current view every minute
+        enableSwipeToDeleteAndUndo();
     }
 
 
@@ -336,6 +389,26 @@ public class MainActivity extends AppCompatActivity
 
             Log.i(TAG, "Refreshing cards!");
 
+            /**
+             * If another sync is already in progress,
+             * wait till it completes and
+             * use its results
+             */
+            if (mBoundService.isSync_in_progress()) {
+                Log.i(TAG, "Another sync already in progress");
+                while (mBoundService.isSync_in_progress() != true);
+            } else {
+                mBoundService.sync_notifications();
+            }
+
+            int num_active = mBoundService.get_active_count();
+            Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
+
+            /** Update active count label */
+            updateActiveCount(counterTv, num_active);
+
+            new UpdateMenusAsyncTask().execute();
+
             /** Refreshing cards on a search view should refresh current search results */
             String searchString = editSearchText.getText().toString();
             if (editSearchText.isFocused() &&
@@ -348,20 +421,13 @@ public class MainActivity extends AppCompatActivity
                 return;
             }
 
-            mBoundService.sync_notifications();
 
-            int num_active = mBoundService.get_active_count();
-            Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
-
-            /** Update active count label */
-            if (num_active > 99)
-                counterTv.setText(String.valueOf(99) + "+");
-            else
-                counterTv.setText(String.valueOf(num_active));
+            /** Store last position in the current view */
+            int lastFirstVisiblePosition =
+                    ((LinearLayoutManager)recyclerView.getLayoutManager()).
+                            findFirstCompletelyVisibleItemPosition();
 
             Toolbar toolbar = findViewById(R.id.toolbar);
-
-
             switch (currentNotificationsView) {
                 case CurrentNotificationsView.TYPE_ACTIVE:
                     Log.i(TAG, "Refreshing active view cards!");
@@ -375,13 +441,37 @@ public class MainActivity extends AppCompatActivity
                     mBoundService.filter_all();
                     break;
 
+                case CurrentNotificationsView.TYPE_APP:
+                    PackageManager pm = getPackageManager();
+                    String app_name;
+                    try {
+                        app_name = pm.getApplicationLabel(
+                                pm.getApplicationInfo(app_filter.toString(),
+                                        PackageManager.GET_META_DATA)).toString();
+                    } catch (PackageManager.NameNotFoundException e) {
+                        app_name = "Unknown";
+                    }
+
+                    Log.i(TAG, "Refreshing app view cards: " + app_filter);
+                    toolbar.setTitle(app_name + " Notifications");
+                    mBoundService.filter_apps(app_filter.toString(), "");
+                    break;
+
                 default:
                     Log.i(TAG, "Refreshing: NOOP!");
-                    break;
+
+                    // shouldn't be coming here at all
+                    // raise an exception for now
+                    // to signal something is wrong
+                    throw new NullPointerException();
+                    //break;
             }
 
             recyclerView.setAdapter(mBoundService.getAdapter());
             mBoundService.getAdapter().notifyDataSetChanged();
+
+            /** restore last position in the current view */
+            recyclerView.scrollToPosition(lastFirstVisiblePosition);
 
             if (swipeLayout.isRefreshing()) {
                 swipeLayout.setRefreshing(false);
@@ -395,7 +485,6 @@ public class MainActivity extends AppCompatActivity
 
     private void performSearch(String searchKey) {
         try {
-            //mBoundService.sync_notifications();
             Log.i(TAG, "Searching for: " + searchKey);
 
             Toolbar toolbar = findViewById(R.id.toolbar);
@@ -409,9 +498,16 @@ public class MainActivity extends AppCompatActivity
                 case CurrentNotificationsView.TYPE_ALL:
                     mBoundService.filter_all(searchKey);
                     break;
+                case CurrentNotificationsView.TYPE_APP:
+                    mBoundService.filter_apps(app_filter.toString(), searchKey);
+                    break;
                 default:
                     Log.i(TAG, "Unknown current view: NOOP!");
-                    break;
+                    // shouldn't be coming here at all
+                    // raise an exception for now
+                    // to signal something is wrong
+                    throw new NullPointerException();
+                    //break;
             }
 
             recyclerView.setAdapter(mBoundService.getAdapter());
@@ -437,8 +533,12 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onClick(View v) {
             try {
+                ArrayList<NtfcnsDataModel> dataSet = ((Ntfcns_adapter)recyclerView.getAdapter()).getDataSet();
                 Log.i(TAG, "Card clicked:  " + recyclerView.getChildAdapterPosition(v));
                 //Log.(TAG, "pos: " + recyclerView.getChildAdapterPosition(v));
+                Log.i(TAG, "Card app: " +
+                        dataSet.get(recyclerView.getChildAdapterPosition(v)).getApp_name());
+
                 handleCardClick(v);
             } catch (Exception e) {
                 Log.e(TAG, "Error getting child position: " + e.getMessage());
@@ -446,28 +546,19 @@ public class MainActivity extends AppCompatActivity
         }
 
         private void handleCardClick(View v) {
-            TextView textViewApps = v.findViewById(R.id.textViewAppName);
-            TextView textViewNtfcnsBigText = v.findViewById(R.id.textViewntfcnBigText);
-            TextView textViewNtfcns = v.findViewById(R.id.textViewntfcn);
-            ImageView imageViewBigPicture = v.findViewById(R.id.imageViewBigPicture);
-
-            LinearLayout top_card_layout = v.findViewById(R.id.top_card_layout);
             LinearLayout group_card_layout = v.findViewById(R.id.group_card_layout);
+            int listposition = recyclerView.getChildAdapterPosition(v);
 
             /** This is a group-heading card */
             if (group_card_layout.getVisibility() == View.VISIBLE) {
-                final int expanded = 0;
-                final int collapsed = 1;
                 TextView textViewPlaceholder = (TextView) v.findViewById(R.id.textViewPlaceholder);
                 Log.i(TAG, "Clicked on group header: " +  textViewPlaceholder.getText().toString());
 
-                if (textViewPlaceholder.getTag() == null)
-                    textViewPlaceholder.setTag(expanded);
-
-                int listposition = recyclerView.getChildAdapterPosition(v);
-
                 try {
-                    if ((int)textViewPlaceholder.getTag() == expanded) {
+                    ArrayList<NtfcnsDataModel> dataSet = ((Ntfcns_adapter)recyclerView.getAdapter()).getDataSet();
+
+                    boolean expanded = dataSet.get(recyclerView.getChildAdapterPosition(v)).isExpanded();
+                    if (expanded) {
                         Log.i(TAG, "Collapse view: " + listposition);
 
                         int num_removed = mBoundService.collapse_group(listposition);
@@ -476,8 +567,8 @@ public class MainActivity extends AppCompatActivity
 
                         Log.i(TAG, "Collapsed view from: " + (listposition+1) + " entries: " +
                                 (num_removed));
+                        dataSet.get(recyclerView.getChildAdapterPosition(v)).setExpanded(false);
 
-                        textViewPlaceholder.setTag(collapsed);
                         textViewPlaceholder.setCompoundDrawablesWithIntrinsicBounds(
                                 R.drawable.arrow_right_48px, 0, 0, 0);
                     } else {
@@ -496,7 +587,8 @@ public class MainActivity extends AppCompatActivity
                         Log.i(TAG, "Expanded view from: " + (listposition+1) + " entries: " +
                                 (num_added));
 
-                        textViewPlaceholder.setTag(expanded);
+                        dataSet.get(recyclerView.getChildAdapterPosition(v)).setExpanded(true);
+
                         textViewPlaceholder.setCompoundDrawablesWithIntrinsicBounds(
                                 R.drawable.arrow_down_48px, 0, 0, 0);
                     }
@@ -507,58 +599,10 @@ public class MainActivity extends AppCompatActivity
                 return;
             }
 
-            LinearLayout ntfcns_actions_layout = v.findViewById(R.id.linear_layout_actions);
-
-            /** Toggle big text and un-expanded text on card click */
-            if(textViewNtfcns.getVisibility() == View.GONE) {
-                textViewNtfcnsBigText.setVisibility(View.GONE);
-                textViewNtfcns.setVisibility(View.VISIBLE);
-                imageViewBigPicture.setVisibility(View.GONE);
-
-                /** Hide actions bar */
-                ntfcns_actions_layout.setVisibility(View.GONE);
-
-                EditText editTextRemoteInput = v.findViewById(R.id.editTextRemoteInput);
-
-                /** Hide remote text input */
-                editTextRemoteInput.setVisibility(View.GONE);
-            } else {
-                textViewNtfcnsBigText.setVisibility(View.VISIBLE);
-                textViewNtfcns.setVisibility(View.GONE);
-                if(imageViewBigPicture.getDrawable() != null) {
-                    imageViewBigPicture.setVisibility(View.VISIBLE);
-                }
-
-                /** Show actions bar */
-                ntfcns_actions_layout.setVisibility(View.VISIBLE);
-            }
-
-            /**
-            Snackbar.make(v, "Clicked card with content: " + textViewApps.getText(),
-                    Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-             */
+            /** Regular card - open notification on click */
+            TextView ntfcn_open_action = v.findViewById(R.id.ntfcn_open_action);
+            ntfcn_open_action.performClick();
         }
-
-        /**
-        private void removeItem(View v) {
-            int selectedItemPosition = recyclerView.getChildAdapterPosition(v);
-            RecyclerView.ViewHolder viewHolder
-                    = recyclerView.findViewHolderForLayoutPosition(selectedItemPosition);
-            TextView textViewApps
-                    = (TextView) viewHolder.itemView.findViewById(R.id.textViewAppName);
-            String selectedName = (String) textViewApps.getText();
-            int selectedItemId = -1;
-            for (int i = 0; i < SampleNotifications.pkg_names.length; i++) {
-                if (selectedName.equals(SampleNotifications.pkg_names[i])) {
-                    selectedItemId = SampleNotifications.id_[i];
-                }
-            }
-            removedItems.add(selectedItemId);
-            data.remove(selectedItemPosition);
-            adapter.notifyItemRemoved(selectedItemPosition);
-        }
-         */
     }
 
 
@@ -567,12 +611,60 @@ public class MainActivity extends AppCompatActivity
     public void onStart() {
         super.onStart();
 
-        /** refresh tasks on startup +
-         * every time the activity is back to focus but only if its been a while
-         */
-        if (System.currentTimeMillis() > last_refresh_time + 60*1000) {
-            new RefreshCardsAsyncTask().execute();
-            last_refresh_time = System.currentTimeMillis();
+        if (Settings.Secure.getString(
+                this.getContentResolver(),
+                "enabled_notification_listeners").contains(getApplicationContext().getPackageName()))
+        {
+            Log.i(TAG,"hasNotificationAccess YES");
+
+            if (opened_settings_activity) {
+                opened_settings_activity = false;
+                /** We are back from settings activity
+                 *  Reload some cfg
+                 *  Specifically, if persistent notification is enabled/disabled
+                 *  create/disable accordingly
+                 *  If default expanded view is enabled, refresh current View.
+                 *
+                 *  All other configuration parameters are checked at their respective places.
+                 */
+                Log.i(TAG, "Back from settings, updating cfg");
+
+                if (NotifierConfiguration.cfg_svc_notification_enabled) {
+                    mBoundService.show_notification();
+                } else {
+                    mBoundService.hide_notification();
+                }
+
+                /** Force a refresh of the current view after returning from settings */
+                last_refresh_time = 0;
+            }
+
+            /** refresh tasks on startup +
+             * every time the activity is back to focus but only if its been a while
+             */
+            if (System.currentTimeMillis() > last_refresh_time + 60*1000) {
+                new RefreshCardsAsyncTask().execute();
+                last_refresh_time = System.currentTimeMillis();
+            }
+        } else {
+            Log.i(TAG,"hasNotificationAccess NO");
+            Snackbar snackbar = Snackbar.make(clayout,
+                    APP_NAME + " does not have notification access, Enable from settings",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackbar.setAction("SETTINGS", new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent=new Intent(
+                            "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                }
+            });
+            snackbar.setActionTextColor(Color.YELLOW);
+            snackbar.show();
+            Toast.makeText(getApplicationContext(),
+                    APP_NAME + " does not have notification access, Enable from settings",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
@@ -580,8 +672,15 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onStop() {
-        //disconnect sqlite3 db etc
         super.onStop();
+
+        SharedPreferences sp = getSharedPreferences("Mysharedprefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+
+        Log.i(TAG, "Saving app_menus_collapsed state: " + app_menus_collapsed);
+
+        editor.putBoolean("app_menus_collapsed", app_menus_collapsed);
+        editor.commit();
     }
 
 
@@ -598,6 +697,13 @@ public class MainActivity extends AppCompatActivity
              */
             if (in_search) {
                 in_search = false;
+                refreshCards();
+                return;
+            }
+
+            /** If we were in an app view, return to active notifications view */
+            if (currentNotificationsView == CurrentNotificationsView.TYPE_APP) {
+                currentNotificationsView = CurrentNotificationsView.TYPE_ALL;
                 refreshCards();
                 return;
             }
@@ -620,29 +726,20 @@ public class MainActivity extends AppCompatActivity
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             Log.d(TAG, "Opening settings");
-            Intent intent=new Intent(
-                    "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
-            startActivity(intent);
+            opened_settings_activity = true;
+            startActivity(new Intent(MainActivity.this, SettingsActivity.class));
             return true;
-        } else if (id == R.id.exitapp) {
-            // Stop background notification listener and exit.
+        } else if (id == R.id.action_about) {
+            Log.d(TAG, "Opening About page");
+            startActivity(new Intent(MainActivity.this, AboutActivity.class));
+            return true;
+        } else if (id == R.id.action_clear) {
+            Log.d(TAG, "Clearing status bar notifications");
 
-            Log.d(TAG, "Exiting application");
-
-            Toast.makeText(getApplicationContext(), "Exiting application",
-                    Toast.LENGTH_LONG).show();
-
-
-            // stop service
-            Intent mServiceIntent = new Intent(this, NLService.class);
-            stopService(mServiceIntent);
-            doUnbindService();
-
-            // Exit activity
-            finish();
+            mBoundService.cancelAllNotifications();
+            new RefreshCardsAsyncTask().execute();
         }
 
         return super.onOptionsItemSelected(item);
@@ -678,6 +775,33 @@ public class MainActivity extends AppCompatActivity
                 Log.e(TAG, "Exception occurred while refreshing all notifications: " +
                         e.getMessage());
             }
+        } else if (submenu_header == item) {
+            Log.i(TAG, "Found submenu header, collapse/expand");
+            ImageView imgView = submenu_header.getActionView().findViewById(R.id.submenu_action_layout);
+            if (app_menus_collapsed) {
+                imgView.setImageResource(R.drawable.arrow_down_48px);
+                app_menus_collapsed = false;
+                new UpdateMenusAsyncTask().execute();
+            } else {
+                app_menus_collapsed = true;
+                imgView.setImageResource(R.drawable.arrow_right_48px);
+                for (Map.Entry<MenuItem, String> entry : menus_to_pkgs.entrySet())
+                    entry.getKey().setVisible(false);
+            }
+
+            return true;
+        } else {
+            if (menus_to_pkgs.containsKey(item)) {
+                Log.i(TAG, "Found custom menu: " + menus_to_pkgs.get(item) +
+                        " ID: " + item.getItemId() +
+                        " Title: " + item.getTitle());
+
+                currentNotificationsView = CurrentNotificationsView.TYPE_APP;
+                toolbar.setTitle(item.getTitle() + " Notifications");
+                app_filter.setLength(0);
+                app_filter.append(menus_to_pkgs.get(item));
+                refreshCards();
+            }
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -688,12 +812,25 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         Log.i(TAG, "onDestroy()");
+
         super.onDestroy();
         doUnbindService();
     }
 
+    private void updateActiveCount(TextView counter, int num_active) {
+        if (num_active == 0) {
+            counter.setVisibility(View.GONE);
+            return;
+        }
 
-    private class RefreshCardsAsyncTask extends AsyncTask<Void, Void, Void> {
+        counter.setVisibility(View.VISIBLE);
+        if (num_active > 99)
+            counter.setText(String.valueOf(99) + "+");
+        else
+            counter.setText(String.valueOf(num_active));
+    }
+
+    private class RefreshCardsAsyncTask extends AsyncTask<Void, String, Void> {
         @Override
         protected Void doInBackground(Void... voids) {
             try {
@@ -704,10 +841,24 @@ public class MainActivity extends AppCompatActivity
                 // to the notification manager
                 Log.i(TAG, "Waiting for listener to be connected...");
 
+                publishProgress("Waiting for listener to be connected...");
                 while(!mBoundService.isListenerConnected());
 
                 Log.i(TAG, "Service bound - updating cards");
-                mBoundService.sync_notifications();
+
+                /**
+                 * If another sync is already in progress,
+                 * wait till it completes and
+                 * use its results
+                 */
+                if (mBoundService.isSync_in_progress()) {
+                    Log.i(TAG, "Another sync already in progress");
+                    while (mBoundService.isSync_in_progress() != true);
+                } else {
+                    mBoundService.sync_notifications();
+                }
+
+                publishProgress("Resyncing notification data");
 
                 /**
                  * if search box is up, and has some search string
@@ -725,16 +876,21 @@ public class MainActivity extends AppCompatActivity
                 }
                 else if (currentNotificationsView == CurrentNotificationsView.TYPE_ACTIVE) {
                     mBoundService.filter_active(searchString);
+                } else if (currentNotificationsView == CurrentNotificationsView.TYPE_APP) {
+                    mBoundService.filter_apps(app_filter.toString(), searchString);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                Log.e(TAG, "Exception in Asynctask - Error: " + e.getMessage());
+                Log.e(TAG, "Exception in Refresh cards Asynctask - Error: " + e.getMessage());
             }
             return null;
         }
 
         @Override
         protected void onPreExecute() {
+            Toast.makeText(getApplicationContext(),
+                    "Refreshing notifications",
+                    Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -743,13 +899,26 @@ public class MainActivity extends AppCompatActivity
                 int num_active = mBoundService.get_active_count();
                 Log.i(TAG, "Active notifications: " + String.valueOf(num_active));
 
-                if (num_active > 99)
-                    counterTv.setText(String.valueOf(99) + "+");
-                else
-                    counterTv.setText(String.valueOf(num_active));
+                updateActiveCount(counterTv, num_active);
+
+                new UpdateMenusAsyncTask().execute();
+
+                /** Store last position in the current view */
+                int lastFirstVisiblePosition =
+                        ((LinearLayoutManager)recyclerView.getLayoutManager()).
+                                findFirstCompletelyVisibleItemPosition();
 
                 recyclerView.setAdapter(mBoundService.getAdapter());
                 mBoundService.getAdapter().notifyDataSetChanged();
+
+                /** restore last position in the current view */
+                recyclerView.scrollToPosition(lastFirstVisiblePosition);
+
+
+                Toast.makeText(getApplicationContext(),
+                        "Refresh completed.",
+                        Toast.LENGTH_SHORT).show();
+
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG, "Exception in postExecute - Error: " + e.getMessage());
@@ -757,7 +926,10 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        protected void onProgressUpdate(Void... values) {
+        protected void onProgressUpdate(String... values) {
+            Toast.makeText(getApplicationContext(),
+                    values[0],
+                    Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -767,5 +939,237 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onCancelled() {
         }
+    }
+
+
+
+    /** Async task to update navigation menus in the background when drawer is opened */
+    private class UpdateMenusAsyncTask extends AsyncTask<Void, String, Void> {
+        TreeMap<String, Integer> apps_list = null;
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                /** Wait if a sync is currently in progress */
+                while (mBoundService.isSync_in_progress());
+
+                apps_list = mBoundService.build_apps_list();
+            } catch (Exception e) {
+                Log.e(TAG, "Exception in Update Menus Asynctask - Error: " + e.getMessage());
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Log.i(TAG, "Updating Menus");
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid){
+            try {
+                PackageManager pm = getPackageManager();
+                NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+                Menu menu = navigationView.getMenu();
+
+                /** We need more menus */
+                if (apps_list.size() > custom_menus.size()) {
+                    for (int i = custom_menus.size(); i < apps_list.size(); i++) {
+                        MenuItem mi = menu.add(R.id.nav_apps_grp,
+                                Menu.FIRST + i, Menu.FIRST+i, "");
+                        mi.setCheckable(true);
+                        mi.setActionView(R.layout.menu_counter);
+                        mi.setVisible(true);
+
+                        custom_menus.add(mi);
+                        menus_to_pkgs.put(mi, "");
+                    }
+                } else {
+                    /** We have more menus than apps, hide unneeded ones */
+                    for (int i=custom_menus.size()-1; i>=apps_list.size(); i--) {
+                        custom_menus.get(i).setVisible(false);
+                    }
+                }
+
+                int i = 0;
+                for (Map.Entry<String, Integer> entry : apps_list.entrySet()) {
+                    String pkg = entry.getKey();
+                    Integer active_count = entry.getValue();
+
+                    Log.i(TAG, entry.getKey() + ": " + entry.getValue());
+
+                    MenuItem mi = custom_menus.get(i);
+
+                    /**
+                     * if menu corresponds to the same app
+                     * Just set active counter and return
+                     * else add appropriate title, and icon
+                     * and link menu to package name
+                     *
+                     * NOTE: we compare packaga names and not the app names
+                     * because app names might not be unique
+                     * e.g. Calendar
+                     */
+                    if (!menus_to_pkgs.get(mi).equals(pkg)) {
+                        String app_name = null;
+                        try {
+                            app_name = pm.getApplicationLabel(
+                                    pm.getApplicationInfo(pkg,
+                                            PackageManager.GET_META_DATA)).toString();
+                        } catch (PackageManager.NameNotFoundException e) {
+                            app_name = "Unknown";
+                        }
+
+                        Drawable app_icon = null;
+                        try {
+                            app_icon = pm.getApplicationIcon(pkg);
+                        } catch (PackageManager.NameNotFoundException e) {
+                            Log.e(TAG, "Error getting app icon");
+                        }
+
+                        mi.setIcon(app_icon);
+                        mi.setTitle(app_name);
+                        menus_to_pkgs.put(mi, pkg);
+                    }
+
+                    updateActiveCount((TextView)mi.getActionView(), active_count);
+
+                    /** Keep menuitems hidden if the group is collapsed */
+                    if (app_menus_collapsed) {
+                        mi.setVisible(false);
+                    } else {
+                        mi.setVisible(true);
+                    }
+                    i++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG, "Exception in update menus async postExecute - Error: " +
+                        e.getMessage());
+            }
+        }
+
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            Toast.makeText(getApplicationContext(),
+                    values[0],
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected void onCancelled(Void aVoid) {
+            Log.i(TAG, "Cancelled params");
+        }
+
+        @Override
+        protected void onCancelled() {
+            Log.i(TAG, "Cancelled..");
+        }
+
+    }
+
+
+        private void enableSwipeToDeleteAndUndo() {
+        SwipeToDelete swipeToDeleteCallback = new SwipeToDelete(this) {
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+
+                final int position = viewHolder.getAdapterPosition();
+                final Ntfcns_adapter adapter = (Ntfcns_adapter)recyclerView.getAdapter();
+                final NtfcnsDataModel item = adapter.getDataSet().get(position);
+                final boolean[] undo_clicked = new boolean[]{false};
+
+                Log.i(TAG, "Swiped position: " + position);
+
+                adapter.removeItem(position);
+
+                StringBuilder snackbar_text = new StringBuilder(item.app_name);
+                if (item.getNtfcn_active_status()) {
+                    snackbar_text.append(" notification removed from active list.");
+                } else {
+                    snackbar_text.append(" notification removed.");
+                }
+
+                Snackbar snackbar = Snackbar
+                        .make(clayout, snackbar_text.toString(),
+                                Snackbar.LENGTH_SHORT);
+
+                snackbar.setAction("UNDO", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        undo_clicked[0] = true;
+                        adapter.restoreItem(item, position);
+                        //recyclerView.scrollToPosition(position);
+
+                        Log.i(TAG, "Restoring item at position: " + position);
+                    }
+                });
+
+                snackbar.setActionTextColor(Color.YELLOW);
+                snackbar.show();
+
+                snackbar.addCallback(new Snackbar.Callback() {
+                    /** Clear notification when snackbar is dismissed */
+                    @Override
+                    public void onDismissed(Snackbar snackbar, int event) {
+                        Log.i(TAG, "Position: " + position +
+                                " Snackbar dismissed - Undo? " + undo_clicked[0]);
+
+                        if (!undo_clicked[0]) {
+                            Log.i(TAG, "Undo wasn't clicked; remove notification for real");
+
+                            if (item.getNtfcn_active_status()) {
+                                // Active notification
+
+                                Log.i(TAG, "Active notification");
+
+                                mBoundService.remove(item.getSbn(), true);
+
+                                /** Clear all notifications from the status bar matching card content */
+                                mBoundService.clearAll(item.getSbn());
+
+                                item.ntfcn_active_status = false;
+
+                                /**
+                                 * If we were in an all-notifications/search view
+                                 * Refresh cards so the cleared card appear
+                                 * in the cached list
+                                 * PS: This isnt needed in the active view because
+                                 * the card is anyway dismissed, and no UI cues are needed.
+                                 */
+                                if (currentNotificationsView !=
+                                        CurrentNotificationsView.TYPE_ACTIVE) {
+                                    //refreshCards();
+                                }
+
+                                Toast.makeText(getApplicationContext(),
+                                        item.getApp_name() + " notification removed from active list.",
+                                        Toast.LENGTH_SHORT).show();
+                            } else {
+                                Log.i(TAG, "Cached notification");
+
+                                mBoundService.remove(item.getSbn(), false);
+
+                                Toast.makeText(getApplicationContext(),
+                                        item.getApp_name() + " notification removed.",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onShown(Snackbar snackbar) {
+
+                    }
+                });
+
+
+            }
+        };
+
+        ItemTouchHelper itemTouchhelper = new ItemTouchHelper(swipeToDeleteCallback);
+        itemTouchhelper.attachToRecyclerView(recyclerView);
     }
 }

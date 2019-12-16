@@ -1,6 +1,7 @@
 package com.vinithepooh.notifier;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -12,12 +13,14 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by vinithepooh on 20/02/19.
+ * Created by Niranjan Nagaraju on 20/02/19.
  */
 
 
@@ -35,6 +38,9 @@ public class NtfcnsData {
         Drawable app_icon = null;
         Bitmap big_icon = null;
         Bitmap big_picture = null;
+
+
+        long cleared_time = 0;
 
 
         public NtfcnDataItem(StatusBarNotification sbn,
@@ -58,6 +64,7 @@ public class NtfcnsData {
             this.app_icon = app_icon;
             this.big_icon = big_icon;
             this.big_picture = big_picture;
+            this.cleared_time = 0;
         }
 
 
@@ -110,14 +117,31 @@ public class NtfcnsData {
         public Bitmap getBig_picture() {
             return big_picture;
         }
+
+
+        public long getCleared_time() {
+            return cleared_time;
+        }
+
+        public void setCleared_time(long cleared_time) {
+            this.cleared_time = cleared_time;
+        }
     }
 
 
     private ConcurrentHashMap<String, NtfcnDataItem> ntfcns_table = new ConcurrentHashMap<>();
     private Context context = null;
     private final String TAG = "bulletin_board_data";
-    private long expire_after = 120*60*1000;
+    private long expire_after =
+            NotifierConfiguration.cfg_cache_expiry_interval*60*60*1000;
 
+    public void set_expiry_timeout(long expire_after) {
+        this.expire_after = expire_after;
+    }
+
+    public long get_expiry_timeout() {
+        return expire_after;
+    }
 
     public NtfcnsData(Context context) {
         this.context = context;
@@ -209,15 +233,64 @@ public class NtfcnsData {
         }
     }
 
+    /**
+     * If there are entries previously marked inactive, but doesn't have its cleared time set,
+     * Set its cleared time to now
+     */
+    public void update_cleared_time_if_zero () {
+        Iterator<Map.Entry<String, NtfcnDataItem>> iter =
+                ntfcns_table.entrySet().iterator();
+
+        long now = System.currentTimeMillis();
+        while (iter.hasNext()) {
+            Map.Entry<String, NtfcnDataItem> entry = iter.next();
+
+            /**
+             * NOTE: This is needed for apps like Gmail
+             * which when 'deleted' update notification with an 'Undo'
+             * and null content, so notifier has no idea what the
+             * removed notification was for.
+             * Next sync, it'll be silently marked inactive, but its cleared time
+             * would remain 0. This readjusts such notifications.
+             */
+            if (!entry.getValue().isActive() && entry.getValue().cleared_time == 0)
+                entry.getValue().setCleared_time(now);
+        }
+    }
+
 
     /**
-     * Filter notifications matching a search string and active status into a list
+     * Filter notifications from a matching package
      */
-    public ArrayList<NtfcnsDataModel> filter(String searchKey,
-                                             boolean active,
-                                             Comparator<NtfcnsDataModel> comparator) {
+    public ArrayList<NtfcnsDataModel> filter_app(String pkg,
+                                                 String searchKey,
+                                                 boolean active,
+                                                 Comparator<NtfcnsDataModel> comparator) {
         ArrayList<NtfcnsDataModel> data = new ArrayList<>();
+        String[] searchKeys = null;
 
+        searchKey = searchKey.trim();
+
+        if (searchKey.equals("")) {
+            searchKeys = new String[] {""};
+        } else {
+            StringBuilder sb = new StringBuilder(searchKey);
+
+            /** If search string had " " in them, remove them for a full word search */
+            if (sb.charAt(0) == '"' && sb.charAt(sb.length() - 1) == '"') {
+                sb.deleteCharAt(0);
+                sb.deleteCharAt(sb.length() - 1);
+                searchKeys = new String[] {sb.toString()};
+            } else {
+                searchKeys = searchKey.split("\\s+");
+            }
+        }
+
+        for (String s: searchKeys) {
+            Log.i(TAG, "Search words: " + s);
+        }
+
+        Boolean expand_by_default = NotifierConfiguration.cfg_default_expanded_view;
 
         for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
             String key = entry.getKey();
@@ -226,9 +299,24 @@ public class NtfcnsData {
             if (entry.getValue().isActive() != active)
                 continue;
 
-            /** match search string */
-            if (!key.toLowerCase().contains(searchKey.toLowerCase()))
+            /** Notification's package names dont match */
+            if (!entry.getValue().sbn.getPackageName().equals(pkg))
                 continue;
+
+
+            /** skip search if the search string is empty, and list everything */
+            if (searchKeys[0].length() != 0) {
+                /** match all words in search string individually */
+                boolean match = true;
+                for (String s : searchKeys) {
+                    match = match && key.toLowerCase().contains(s.toLowerCase());
+                    if (!match)
+                        break;
+                }
+
+                if (!match)
+                    continue;
+            }
 
             StatusBarNotification sbn = entry.getValue().get_sbn();
             String app_name = entry.getValue().getApp_name();
@@ -253,7 +341,115 @@ public class NtfcnsData {
                     text,
                     bigtext,
                     big_icon,
-                    big_picture
+                    big_picture,
+                    expand_by_default  /** notifications are collapsed by default */
+            ));
+        }
+
+        Collections.sort(data, comparator);
+
+        return data;
+    }
+
+
+    /**
+     * Filter all active notifications into a sorted list
+     * by default, sort by reverse chronological order based on post time.
+     */
+    public ArrayList<NtfcnsDataModel> filter_active_app(String pkg, String searchKey) {
+        return this.filter_app(pkg, searchKey, true, postTimeComparator);
+    }
+
+
+    /**
+     * Filter all inactive notifications into a sorted list
+     * by default, sort by reverse chronological order based on post time.
+     */
+    public ArrayList<NtfcnsDataModel> filter_inactive_app(String pkg, String searchKey) {
+        return this.filter_app(pkg, searchKey, false, postTimeComparator);
+    }
+
+
+
+
+
+    /**
+     * Filter notifications matching a search string and active status into a list
+     */
+    public ArrayList<NtfcnsDataModel> filter(String searchKey,
+                                             boolean active,
+                                             Comparator<NtfcnsDataModel> comparator) {
+        ArrayList<NtfcnsDataModel> data = new ArrayList<>();
+        String[] searchKeys = null;
+
+        searchKey = searchKey.trim();
+
+        if (searchKey.equals("")) {
+            searchKeys = new String[] {""};
+        } else {
+            StringBuilder sb = new StringBuilder(searchKey);
+
+            /** If search string had " " in them, remove them for a full word search */
+            if (sb.charAt(0) == '"' && sb.charAt(sb.length() - 1) == '"') {
+                sb.deleteCharAt(0);
+                sb.deleteCharAt(sb.length() - 1);
+                searchKeys = new String[] {sb.toString()};
+            } else {
+                searchKeys = searchKey.split("\\s+");
+            }
+        }
+
+        for (String s: searchKeys) {
+            Log.i(TAG, "Search words: " + s);
+        }
+
+        Boolean expand_by_default = NotifierConfiguration.cfg_default_expanded_view;
+        for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
+            String key = entry.getKey();
+
+            /** Notification's active status doesn't match filter's active status */
+            if (entry.getValue().isActive() != active)
+                continue;
+
+            /** skip search if the search string is empty, and list everything */
+            if (searchKeys[0].length() != 0) {
+                /** match all words in search string individually */
+                boolean match = true;
+                for (String s : searchKeys) {
+                    match = match && key.toLowerCase().contains(s.toLowerCase());
+                    if (!match)
+                        break;
+                }
+
+                if (!match)
+                    continue;
+            }
+
+            StatusBarNotification sbn = entry.getValue().get_sbn();
+            String app_name = entry.getValue().getApp_name();
+            String subtext = entry.getValue().getSubtext();
+            String title = entry.getValue().getTitle();
+            String text = entry.getValue().getText();
+            String bigtext = entry.getValue().getBigText();
+
+            Drawable app_icon = entry.getValue().getApp_icon();
+            Bitmap big_icon = entry.getValue().getBig_icon();
+            Bitmap big_picture = entry.getValue().getBig_picture();
+
+            data.add(new NtfcnsDataModel(
+                    sbn,
+                    (active ? "Active Notifications" : "Cached Notifications"),
+                    app_icon,
+                    app_name,
+                    subtext,
+                    sbn.getPostTime(),
+                    active,
+                    title,
+                    text,
+                    bigtext,
+                    big_icon,
+                    big_picture,
+                    expand_by_default  /** notifications are collapsed by default */
             ));
         }
 
@@ -282,6 +478,74 @@ public class NtfcnsData {
 
 
     /**
+     * Build a list of packages from notifications sorted by their app name,
+     * and their active count
+     */
+    public TreeMap<String, Integer> build_apps_list() {
+        final PackageManager pm = context.getPackageManager();
+
+        Comparator<String> apps_name_comparator = new Comparator<String>() {
+            public int compare(String a1, String a2) {
+                try {
+                    String s1 = pm.getApplicationLabel(
+                            pm.getApplicationInfo(a1, PackageManager.GET_META_DATA)).toString();
+                    String s2 = pm.getApplicationLabel(
+                            pm.getApplicationInfo(a2, PackageManager.GET_META_DATA)).toString();
+
+                    return s1.compareToIgnoreCase(s2);
+                } catch (PackageManager.NameNotFoundException e) {
+                    return a1.compareToIgnoreCase(a2);
+                }
+            }
+        };
+
+        TreeMap<String, Integer> apps_list = new TreeMap<>(apps_name_comparator);
+
+        for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
+            String pkg = entry.getValue().sbn.getPackageName();
+            Boolean isActive = entry.getValue().isActive();
+
+            if (apps_list.containsKey(pkg)) {
+                Integer count = apps_list.get(pkg);
+
+                /** If the notification is active, Increase active count for pkg */
+                if (isActive)
+                    apps_list.put(pkg, count+1);
+            } else {
+                apps_list.put(pkg, 0);
+
+                /** If the notification is active, Increase active count for pkg */
+                if (isActive)
+                    apps_list.put(pkg, 1);
+            }
+
+        }
+
+        return  apps_list;
+    }
+
+
+    /**
+     * Remove a notification entry from the table if cached
+     * Mark inactive if it was an active notification
+     * NOTE: The card's active status is as seen in the view
+     *       and not from the dataset because they may no longer
+     *       be in sync.
+     */
+    public void remove(StatusBarNotification sbn, boolean active) {
+        String key = getCondensedString(sbn);
+
+        if (active) {
+            /** if the notification was active, mark it as cached and return */
+            this.addInactive(key, sbn);
+        } else {
+            /** if the notification was cached, remove it from the hash table */
+            this.ntfcns_table.remove(this.getCondensedString(sbn));
+        }
+    }
+
+
+    /**
      * Add a status bar notification to the table
      * Mark it as active
      *
@@ -292,7 +556,7 @@ public class NtfcnsData {
      */
     public boolean addActive(String key, StatusBarNotification sbn) {
         if (this.ntfcns_table.containsKey(key)) {
-            StatusBarNotification sbn_c = sbn.clone();
+            StatusBarNotification sbn_c = sbn;
             this.ntfcns_table.get(key).setSBN(sbn_c);
             this.ntfcns_table.get(key).setActive(true);
 
@@ -394,6 +658,21 @@ public class NtfcnsData {
     }
 
 
+
+    /** Get active notifications currently in the hash map */
+    public int getActiveCount() {
+        int active_count = 0;
+
+        for(Map.Entry<String, NtfcnDataItem> entry : ntfcns_table.entrySet()) {
+            /** Notification's status is active */
+            if (entry.getValue().isActive())
+                active_count++;
+        }
+
+        return active_count;
+    }
+
+
     /**
      * Mark a previously-stored status bar notification as inactive
      * if it's already there in the table
@@ -403,9 +682,12 @@ public class NtfcnsData {
      */
     public boolean addInactive(String key, StatusBarNotification sbn) {
         if (this.ntfcns_table.containsKey(key)) {
-            StatusBarNotification sbn_c = sbn.clone();
+            StatusBarNotification sbn_c = sbn;
             this.ntfcns_table.get(key).setSBN(sbn_c);
             this.ntfcns_table.get(key).setActive(false);
+
+            /** Set cleared time as now, so we can track expiration timeout from here */
+            this.ntfcns_table.get(key).setCleared_time(System.currentTimeMillis());
 
             /**
              * If large icon wasnt available earlier,
@@ -436,6 +718,12 @@ public class NtfcnsData {
         long current = System.currentTimeMillis();
         boolean changed = false;
 
+        Log.i(TAG, "In prune: cache timeout: " +
+                NotifierConfiguration.getCache_expiry_interval());
+
+        expire_after = NotifierConfiguration.getCache_expiry_interval()*60*60*1000;
+        Log.i(TAG, "Prune expiry interval: " + expire_after);
+
         Iterator<Map.Entry<String, NtfcnDataItem>> iter =
                 ntfcns_table.entrySet().iterator();
 
@@ -447,15 +735,11 @@ public class NtfcnsData {
                 continue;
 
             String key = entry.getKey();
-            StatusBarNotification sbn = entry.getValue().get_sbn();
-
             /**
-             * remove entries older than 2 hours
+             * remove entries older than 'expiration time' hours
              * from the time they have been 'cleared'
-             * TODO: make this 'interval' configurable
-             * TODO: Store cleared time instead of sbn post time
              */
-            if (current > (sbn.getPostTime() + expire_after)) {
+            if (current > (entry.getValue().getCleared_time() + expire_after)) {
                 Log.i(TAG, "Pruning entry with key: " + key);
                 iter.remove();
                 changed = true;
@@ -463,4 +747,5 @@ public class NtfcnsData {
         }
         return changed;
     }
+
 }
