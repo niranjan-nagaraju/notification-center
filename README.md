@@ -20,4 +20,5 @@
     [APK releases](https://github.com/niranjan-nagaraju/notification-center/releases "Releases")
   
   
-![Apache License-2.0](https://img.shields.io/github/license/niranjan-nagaraju/notification-center "License")
+
+[ ![Apache License-2.0](https://img.shields.io/github/license/niranjan-nagaraju/notification-center) ](https://github.com/niranjan-nagaraju/notification-center/blob/master/LICENSE "Apache License-2.0")
