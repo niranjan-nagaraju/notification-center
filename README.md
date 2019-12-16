@@ -15,5 +15,6 @@
 
   + #### FAQs ####
     [Link to FAQs](https://github.com/niranjan-nagaraju/notification-center/blob/master/FAQ.md)  
-
-    ![Apache License-2.0](https://img.shields.io/github/license/niranjan-nagaraju/notification-center "License")
+  
+  
+![Apache License-2.0](https://img.shields.io/github/license/niranjan-nagaraju/notification-center "License")
