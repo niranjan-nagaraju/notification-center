@@ -662,9 +662,10 @@ public class MainActivity extends AppCompatActivity
             });
             snackbar.setActionTextColor(Color.YELLOW);
             snackbar.show();
+            /**
             Toast.makeText(getApplicationContext(),
                     APP_NAME + " does not have notification access, Enable from settings",
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_LONG).show(); */
         }
     }
 
@@ -1074,7 +1075,7 @@ public class MainActivity extends AppCompatActivity
         private void enableSwipeToDeleteAndUndo() {
         SwipeToDelete swipeToDeleteCallback = new SwipeToDelete(this) {
             @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, final int direction) {
 
                 final int position = viewHolder.getAdapterPosition();
                 final Ntfcns_adapter adapter = (Ntfcns_adapter)recyclerView.getAdapter();
@@ -1085,8 +1086,16 @@ public class MainActivity extends AppCompatActivity
 
                 adapter.removeItem(position);
 
+                /** If a persistent notification is active, don't try to clear them in vain */
+                if (item.ntfcn_active_status &&
+                        (item.getSbn().isOngoing() || !item.getSbn().isClearable())) {
+                    Log.i(TAG, "Persistent/ongoing notification - cannot be cleared");
+                    adapter.restoreItem(item, position);
+                    return;
+                }
+
                 StringBuilder snackbar_text = new StringBuilder(item.app_name);
-                if (item.getNtfcn_active_status()) {
+                if (direction != ItemTouchHelper.LEFT && item.getNtfcn_active_status()) {
                     snackbar_text.append(" notification removed from active list.");
                 } else {
                     snackbar_text.append(" notification removed.");
@@ -1094,7 +1103,7 @@ public class MainActivity extends AppCompatActivity
 
                 Snackbar snackbar = Snackbar
                         .make(clayout, snackbar_text.toString(),
-                                Snackbar.LENGTH_SHORT);
+                                Snackbar.LENGTH_LONG);
 
                 snackbar.setAction("UNDO", new View.OnClickListener() {
                     @Override
@@ -1117,8 +1126,19 @@ public class MainActivity extends AppCompatActivity
                         Log.i(TAG, "Position: " + position +
                                 " Snackbar dismissed - Undo? " + undo_clicked[0]);
 
+
                         if (!undo_clicked[0]) {
                             Log.i(TAG, "Undo wasn't clicked; remove notification for real");
+
+                            if (direction == ItemTouchHelper.LEFT) {
+                                Log.i(TAG, "In snackbar: Left swipe - remove permanently");
+                                mBoundService.remove(item.getSbn(), false);
+
+                                /** Clear all notifications from the status bar matching card content */
+                                mBoundService.clearAll(item.getSbn());
+
+                                return;
+                            }
 
                             if (item.getNtfcn_active_status()) {
                                 // Active notification
@@ -1144,17 +1164,19 @@ public class MainActivity extends AppCompatActivity
                                     //refreshCards();
                                 }
 
+                                /**
                                 Toast.makeText(getApplicationContext(),
                                         item.getApp_name() + " notification removed from active list.",
-                                        Toast.LENGTH_SHORT).show();
+                                        Toast.LENGTH_SHORT).show(); */
                             } else {
                                 Log.i(TAG, "Cached notification");
 
                                 mBoundService.remove(item.getSbn(), false);
 
+                                /**
                                 Toast.makeText(getApplicationContext(),
                                         item.getApp_name() + " notification removed.",
-                                        Toast.LENGTH_SHORT).show();
+                                        Toast.LENGTH_SHORT).show(); */
                             }
                         }
                     }

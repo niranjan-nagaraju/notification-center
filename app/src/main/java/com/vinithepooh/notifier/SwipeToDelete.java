@@ -111,6 +111,14 @@ abstract public class SwipeToDelete extends ItemTouchHelper.Callback {
             int deleteIconLeft = itemView.getLeft() + deleteIconMargin;
             int deleteIconRight = itemView.getLeft() + deleteIconMargin + intrinsicWidth;
 
+            final Ntfcns_adapter adapter = (Ntfcns_adapter)recyclerView.getAdapter();
+            int position  = viewHolder.getAdapterPosition();
+
+            /** active notification, right-swipe, Use blue to indicate this isn't a permanent delete */
+            if (position >= 0 && adapter.getDataSet().get(position).getNtfcn_active_status()) {
+                background.setColor(Color.BLUE);
+            }
+
             background.setBounds(itemView.getLeft(), itemView.getTop(),
                     itemView.getLeft() + (int)dX, itemView.getBottom());
 
