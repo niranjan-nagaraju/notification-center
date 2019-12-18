@@ -303,6 +303,14 @@ public class NLService extends NotificationListenerService {
     }
 
 
+    /** Remove everything in the notifier hash table */
+    public void reset() {
+        Log.i(TAG, "Clearing everything from the notifications table");
+        this.cancelAllNotifications();
+        this.ntfcn_items.reset();
+    }
+
+
     /** Add a status bar notification from active notifications to the active table */
     private boolean addActiveSBN(StatusBarNotification sbn) {
         if ( sbn.isOngoing() || !sbn.isClearable() ) {

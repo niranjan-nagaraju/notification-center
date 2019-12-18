@@ -545,6 +545,12 @@ public class NtfcnsData {
     }
 
 
+    /** Remove everything from the notifications table */
+    public void reset() {
+        this.ntfcns_table.clear();
+    }
+
+
     /**
      * Add a status bar notification to the table
      * Mark it as active
