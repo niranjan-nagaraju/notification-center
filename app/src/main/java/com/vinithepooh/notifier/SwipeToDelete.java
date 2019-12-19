@@ -17,6 +17,8 @@ import android.view.View;
 
 /**
  * Created by Niranjan Nagaraju on 02/12/19.
+ *
+ * Adapted from https://www.journaldev.com/23164/android-recyclerview-swipe-to-delete-undo
  */
 
 

@@ -15,6 +15,8 @@ import android.view.ViewGroup;
 /**
  * A {@link PreferenceActivity} which implements and proxies the necessary calls
  * to be used with AppCompat.
+ * Source credit: AndroidHive
+ *   https://www.androidhive.info/2017/07/android-implementing-preferences-settings-screen/
  */
 public abstract class AppCompatPreferenceActivity extends PreferenceActivity {
 
@@ -107,3 +109,4 @@ public abstract class AppCompatPreferenceActivity extends PreferenceActivity {
         return mDelegate;
     }
 }
+
